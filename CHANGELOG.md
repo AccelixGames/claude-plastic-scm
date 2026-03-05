@@ -9,7 +9,7 @@
 ## [1.3.1] - 2026-03-05
 
 ### 변경
-- claude-plastic-scm v1.2.1: `/cm-checkin` allowed-tools 누락 수정
+- claude-plastic-scm v1.2.1: `/cm-checkin` allowed-tools 누락 수정 + 체크 해제 파일 누락 검증 추가
 
 ## [1.3.0] - 2026-03-05
 

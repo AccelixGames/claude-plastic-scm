@@ -8,6 +8,9 @@
 ### 수정
 - `/cm-checkin` allowed-tools에 `Bash(cm wi:*)` 누락 — 컨텍스트 주입 시 권한 차단 수정
 
+### 추가
+- `/cm-checkin` Step 7에 주요 변경 파일 누락 검증 — 체크 해제된 primary 파일 경고
+
 ## [1.2.0] - 2026-03-05
 
 ### 변경

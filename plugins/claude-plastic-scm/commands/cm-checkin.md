@@ -72,9 +72,16 @@ cm checkin -c="{comment}"
 
 ### Step 7: Verify
 
-Show the resulting changeset info to confirm success:
-```
-cm find changeset "where changesetid = (SELECT cs.changesetid FROM workspace)" --format="{changesetid}|{date}|{comment}" --nototal
-```
+1. Show the resulting changeset info to confirm success:
+   ```
+   cm find changeset "where changesetid = (SELECT cs.changesetid FROM workspace)" --format="{changesetid}|{date}|{comment}" --nototal
+   ```
+
+2. **Check for missed primary changes** — Run `cm status --short` again to see if any files remain pending. Cross-reference with the primary changes from Step 2:
+   - If any **primary change** file still appears in pending status, it was "unchecked" and was NOT included in the checkin.
+   - Warn the user: "⚠️ 다음 주요 변경 파일이 체크인되지 않았습니다:" followed by the list.
+   - Ask: "추가 체크인이 필요하면 알려주세요. 또는 PlasticSCM GUI에서 해당 파일의 체크 상태를 확인해 주세요."
+   - If only ancillary files remain, this is normal — do not warn.
+   - If no files remain pending, the checkin is fully complete.
 
 Do not use any other tools. Do not send any other text or messages besides these tool calls.
