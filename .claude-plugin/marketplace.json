@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-plastic-scm",
+  "description": "PlasticSCM (Unity Version Control) workflow automation for Claude Code",
+  "owner": {
+    "name": "AccelixGames",
+    "email": "accelix.staff@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "claude-plastic-scm",
+      "description": "PlasticSCM (Unity Version Control) workflow automation — checkin, merge comments, branch info, status, history, diff",
+      "version": "1.0.0",
+      "author": {
+        "name": "AccelixGames",
+        "email": "accelix.staff@gmail.com"
+      },
+      "source": "./plugins/claude-plastic-scm",
+      "category": "development"
+    }
+  ]
+}

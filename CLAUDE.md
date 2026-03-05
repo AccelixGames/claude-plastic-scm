@@ -5,7 +5,7 @@
 When **any** command, skill, or reference file is modified (even 1 line), you MUST do all of the following before completing the task:
 
 1. **`CHANGELOG.md`** — Add entry under the current version (Keep a Changelog, Korean)
-2. **`.claude-plugin/plugin.json`** — Update `version` field (Semantic Versioning)
+2. **`plugins/claude-plastic-scm/.claude-plugin/plugin.json`** AND **`.claude-plugin/marketplace.json`** — Update `version` (Semantic Versioning, both must match)
 3. **`README.md`** — Update if commands were added, changed, or removed
 
 ### Version Management
@@ -57,35 +57,49 @@ When **any** command, skill, or reference file is modified (even 1 line), you MU
 ## Plugin Structure
 
 ```
-claude-plastic-scm/
+claude-plastic-scm/                      — Marketplace root (git repo)
 ├── .claude-plugin/
-│   └── plugin.json              — Plugin metadata (name, version, author)
-├── CLAUDE.md                    — This file (maintenance rules)
-├── CHANGELOG.md                 — Version history (Keep a Changelog, Korean)
-├── README.md                    — Install/usage guide (Korean)
-├── LICENSE                      — MIT
+│   └── marketplace.json                 — Marketplace manifest
+├── CLAUDE.md                            — This file (maintenance rules)
+├── CHANGELOG.md                         — Version history (Keep a Changelog, Korean)
+├── README.md                            — Install/usage guide (Korean)
 ├── .gitignore
-├── commands/                    — Slash commands (user-invocable)
-│   ├── cm-checkin.md            — /cm-checkin
-│   ├── cm-merge-comment.md      — /cm-merge-comment
-│   ├── cm-branch-info.md        — /cm-branch-info
-│   ├── cm-status.md             — /cm-status
-│   ├── cm-history.md            — /cm-history
-│   └── cm-diff.md               — /cm-diff
-└── skills/
-    └── plastic-scm/
-        ├── SKILL.md             — Knowledge base (auto-trigger)
-        └── references/
-            └── cm-commands.md   — Full cm CLI reference
+└── plugins/
+    └── claude-plastic-scm/              — Plugin root
+        ├── .claude-plugin/
+        │   └── plugin.json              — Plugin metadata (name, version, author)
+        ├── LICENSE                      — MIT
+        ├── commands/                    — Slash commands (user-invocable)
+        │   ├── cm-checkin.md            — /cm-checkin
+        │   ├── cm-merge-comment.md      — /cm-merge-comment
+        │   ├── cm-branch-info.md        — /cm-branch-info
+        │   ├── cm-status.md             — /cm-status
+        │   ├── cm-history.md            — /cm-history
+        │   └── cm-diff.md               — /cm-diff
+        └── skills/
+            └── plastic-scm/
+                ├── SKILL.md             — Knowledge base (auto-trigger)
+                └── references/
+                    └── cm-commands.md   — Full cm CLI reference
 ```
+
+**Key paths for maintenance:**
+- Version: `plugins/claude-plastic-scm/.claude-plugin/plugin.json`
+- Commands: `plugins/claude-plastic-scm/commands/`
+- Skills: `plugins/claude-plastic-scm/skills/`
+- Marketplace version: `.claude-plugin/marketplace.json` (sync with plugin.json)
 
 ## Distribution
 
 ```bash
-# Install
-claude plugin install github:AccelixGames/claude-plastic-scm
+# Add marketplace (first time only)
+claude plugin marketplace add AccelixGames/claude-plastic-scm
 
-# Update
+# Install
+claude plugin install claude-plastic-scm
+
+# Update (after git push)
+claude plugin marketplace update claude-plastic-scm
 claude plugin update claude-plastic-scm
 
 # Uninstall
