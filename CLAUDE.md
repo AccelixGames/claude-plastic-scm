@@ -180,14 +180,14 @@ accelix-ai-plugins/                     — Marketplace root (git repo)
 
 ```bash
 # Add marketplace (first time only)
-claude plugin marketplace add AccelixGames/claude-plugins-accelix
+claude plugin marketplace add AccelixGames/accelix-ai-plugins
 
 # Install a plugin
 claude plugin install claude-plastic-scm
 
 # Update (after git push)
 claude plugin marketplace update accelix-ai-plugins
-claude plugin update claude-plastic-scm
+claude plugin update claude-plastic-scm@accelix-ai-plugins
 
 # Uninstall
 claude plugin uninstall claude-plastic-scm
