@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "claude-plugins-accelix",
+  "name": "accelix-ai-plugins",
   "description": "AccelixGames team plugins for Claude Code",
   "owner": {
     "name": "AccelixGames",
