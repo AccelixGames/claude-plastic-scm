@@ -58,30 +58,30 @@ Classify each file from `cm status --short` into three groups:
 ### Step 5: Present for confirmation
 
 Show the user:
-- **주요 변경** — List of primary change files
+- **주요 변경** — List of primary change files (these WILL be included in the checkin)
 - **자동/부수 변경** — Count of ancillary files (collapsed, show details only if asked)
 - **최종 코멘트** — The proposed comment
-- Ask for approval before proceeding.
+- Ask: "위 파일들을 체크인합니다. 제외할 파일이 있으면 알려주세요."
+- If the user wants to exclude specific files, remove them from the file list before proceeding.
 
 ### Step 6: Execute checkin
 
-Once confirmed, run:
+Once confirmed, **explicitly specify all files** to guarantee inclusion regardless of PlasticSCM GUI check state:
 ```
-cm checkin -c="{comment}"
+cm checkin "{file1}" "{file2}" ... -c="{comment}"
 ```
+
+- Include both primary and ancillary files in the file list.
+- Quote each file path to handle spaces.
+- If the total file count exceeds 30, split into batches to avoid command line length limits. Use the same comment for all batches.
+
+**Important:** Do NOT use bare `cm checkin -c="{comment}"` without file arguments — this only commits "checked" files in PlasticSCM, which may silently skip primary changes that were unchecked in the GUI.
 
 ### Step 7: Verify
 
-1. Show the resulting changeset info to confirm success:
-   ```
-   cm find changeset "where changesetid = (SELECT cs.changesetid FROM workspace)" --format="{changesetid}|{date}|{comment}" --nototal
-   ```
-
-2. **Check for missed primary changes** — Run `cm status --short` again to see if any files remain pending. Cross-reference with the primary changes from Step 2:
-   - If any **primary change** file still appears in pending status, it was "unchecked" and was NOT included in the checkin.
-   - Warn the user: "⚠️ 다음 주요 변경 파일이 체크인되지 않았습니다:" followed by the list.
-   - Ask: "추가 체크인이 필요하면 알려주세요. 또는 PlasticSCM GUI에서 해당 파일의 체크 상태를 확인해 주세요."
-   - If only ancillary files remain, this is normal — do not warn.
-   - If no files remain pending, the checkin is fully complete.
+Show the resulting changeset info to confirm success:
+```
+cm find changeset "where changesetid = (SELECT cs.changesetid FROM workspace)" --format="{changesetid}|{date}|{comment}" --nototal
+```
 
 Do not use any other tools. Do not send any other text or messages besides these tool calls.

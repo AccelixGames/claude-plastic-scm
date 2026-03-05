@@ -8,8 +8,8 @@
 ### 수정
 - `/cm-checkin` allowed-tools에 `Bash(cm wi:*)` 누락 — 컨텍스트 주입 시 권한 차단 수정
 
-### 추가
-- `/cm-checkin` Step 7에 주요 변경 파일 누락 검증 — 체크 해제된 primary 파일 경고
+### 변경
+- `/cm-checkin` Step 6: 명시적 파일 지정 체크인으로 변경 — GUI 체크 해제 상태와 무관하게 모든 파일 포함 보장
 
 ## [1.2.0] - 2026-03-05
 
