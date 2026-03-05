@@ -1,19 +1,14 @@
-# claude-plastic-scm
+# claude-plugins-accelix
 
-PlasticSCM (Unity Version Control) 워크플로우 자동화를 위한 Claude Code 플러그인입니다.
-
-## 요구사항
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
-- PlasticSCM CLI (`cm`) — [Unity Hub](https://unity.com/unity-hub) 또는 [plasticscm.com](https://www.plasticscm.com/) 에서 설치
+AccelixGames 팀 전용 Claude Code 플러그인 마켓플레이스입니다.
 
 ## 설치
 
 ```bash
 # 1. 마켓플레이스 등록 (최초 1회)
-claude plugin marketplace add AccelixGames/claude-plastic-scm
+claude plugin marketplace add AccelixGames/claude-plugins-accelix
 
-# 2. 플러그인 설치
+# 2. 원하는 플러그인 설치
 claude plugin install claude-plastic-scm
 ```
 
@@ -21,7 +16,7 @@ claude plugin install claude-plastic-scm
 
 ```bash
 # 마켓플레이스 + 플러그인 모두 업데이트
-claude plugin marketplace update claude-plastic-scm
+claude plugin marketplace update claude-plugins-accelix
 claude plugin update claude-plastic-scm
 ```
 
@@ -31,7 +26,15 @@ claude plugin update claude-plastic-scm
 claude plugin uninstall claude-plastic-scm
 ```
 
-## 사용 가능한 명령
+---
+
+## 플러그인 목록
+
+### claude-plastic-scm
+
+PlasticSCM (Unity Version Control) 워크플로우 자동화.
+
+**요구사항:** PlasticSCM CLI (`cm`)
 
 | 명령 | 설명 | 사용법 |
 |------|------|--------|
@@ -42,35 +45,10 @@ claude plugin uninstall claude-plastic-scm
 | `/cm-history` | 파일/디렉토리 변경 이력 조회 | `/cm-history <경로>` |
 | `/cm-diff` | 체인지셋, 브랜치, 라벨 간 비교 | `/cm-diff cs:100 cs:200` |
 
-### 예시
+**자동 트리거:** PlasticSCM 관련 대화 시 cm CLI 지식 베이스가 자동 활성화됩니다.
 
-```bash
-# 현재 브랜치의 병합 코멘트 정리
-/cm-merge-comment
-
-# 특정 브랜치 지정
-/cm-merge-comment /main/MacBuilder
-
-# 워크스페이스 상태 확인
-/cm-status
-
-# 브랜치 정보 조회
-/cm-branch-info /main/Alpha2
-
-# 파일 이력 확인
-/cm-history Assets/Scripts/Player.cs
-
-# 체인지셋 비교
-/cm-diff cs:2718 cs:2721
-```
-
-## 자동 트리거 (Skill)
-
-PlasticSCM 관련 대화를 하면 자동으로 cm CLI 지식 베이스가 활성화됩니다.
-별도로 명령을 입력하지 않아도 `cm` 명령 문법, 쿼리 작성, 트러블슈팅 등을 지원합니다.
-
-**트리거 키워드:** 플라스틱, 체인지셋, cm 명령, 병합, 브랜치, 체크인, 워크스페이스 등
+---
 
 ## 라이선스
 
-MIT License — [LICENSE](plugins/claude-plastic-scm/LICENSE) 참고
+MIT License

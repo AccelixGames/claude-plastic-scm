@@ -1,9 +1,15 @@
 # Changelog
 
-이 문서는 claude-plastic-scm 플러그인의 변경 내역을 기록한다.
+이 문서는 claude-plugins-accelix 마켓플레이스의 변경 내역을 기록한다.
 
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
+
+## [1.1.0] - 2026-03-05
+
+### 변경
+- 마켓플레이스 이름 변경: `claude-plastic-scm` → `claude-plugins-accelix`
+- 팀 전용 마켓플레이스로 구조 개편 (복수 플러그인 호스팅 지원)
 
 ## [1.0.0] - 2026-03-05
 

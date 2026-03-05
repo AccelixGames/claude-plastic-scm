@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "claude-plastic-scm",
-  "description": "PlasticSCM (Unity Version Control) workflow automation for Claude Code",
+  "name": "claude-plugins-accelix",
+  "description": "AccelixGames team plugins for Claude Code",
   "owner": {
     "name": "AccelixGames",
     "email": "accelix.staff@gmail.com"
