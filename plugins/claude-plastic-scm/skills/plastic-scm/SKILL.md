@@ -103,6 +103,7 @@ This plugin also provides slash commands for common workflows:
 | `/cm-branch-info` | Branch overview and merge history |
 | `/cm-status` | Categorized workspace status |
 | `/cm-history` | File/directory change history |
+| `/cm-compile-check` | Check Unity compile errors |
 | `/cm-diff` | Compare changesets/branches/labels |
 
 ## Troubleshooting

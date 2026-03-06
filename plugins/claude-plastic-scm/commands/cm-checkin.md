@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(cm wi:*), Bash(cm status:*), Bash(cm checkin:*), Bash(cm find:*), Bash(cm log:*), Bash(cm partial:*), Bash(cm add:*), Read, Edit, Write
+allowed-tools: Bash(cm wi:*), Bash(cm status:*), Bash(cm checkin:*), Bash(cm find:*), Bash(cm log:*), Bash(cm partial:*), Bash(cm add:*), Bash(ls:*), Bash(cat:*), Bash(tail:*), Bash(grep:*), Read, Edit, Write
 description: PlasticSCM checkin with smart comment generation — filters auto-generated files, supports user comments, archives filter patterns (체크인/커밋/푸시)
 argument-hint: "[additional comment]"
 ---
@@ -116,7 +116,31 @@ Before executing checkin, parse file status codes and run required pre-processin
 
 6. If any pre-processing command fails, show the error and ask the user how to proceed.
 
-### Step 7: Execute checkin
+### Step 7: Compile error check
+
+Before executing checkin, verify that the Unity project compiles without errors.
+
+1. Check Unity is running:
+   ```bash
+   ls -la "{PROJECT_PATH}/Temp/UnityLockfile" 2>/dev/null && echo "UNITY_RUNNING" || echo "UNITY_NOT_RUNNING"
+   ```
+   - If `UNITY_NOT_RUNNING` → skip this step (cannot verify).
+
+2. Check current compile status:
+   ```bash
+   tail -100 "$APPDATA/../Local/Unity/Editor/Editor.log" 2>/dev/null | grep -i "error CS\|Reloading assemblies after finishing script compilation"
+   ```
+
+3. **Interpretation:**
+   - If `Reloading assemblies after finishing script compilation` appears AFTER the last `error CS` line (or no `error CS` exists) → proceed to Step 8.
+   - If `error CS` lines appear AFTER the last `Reloading assemblies` line → **active compile errors exist**.
+
+4. **On active errors:**
+   - List unique errors (deduplicated).
+   - Ask: "컴파일 에러가 있습니다. 그래도 체크인을 진행할까요?"
+   - If the user declines → stop. If the user confirms → proceed to Step 8.
+
+### Step 8: Execute checkin
 
 Once prepared, **explicitly specify all files** to guarantee inclusion regardless of PlasticSCM GUI check state:
 ```
@@ -129,7 +153,7 @@ cm checkin "{file1}" "{file2}" ... -c="{comment}"
 
 **Important:** Do NOT use bare `cm checkin -c="{comment}"` without file arguments — this only commits "checked" files in PlasticSCM, which may silently skip primary changes that were unchecked in the GUI.
 
-### Step 8: Verify
+### Step 9: Verify
 
 Show the resulting changeset info to confirm success:
 ```

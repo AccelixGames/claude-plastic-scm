@@ -32,7 +32,7 @@ claude plugin uninstall claude-plastic-scm
 
 | 플러그인 | 설명 | 상세 |
 |----------|------|------|
-| [claude-plastic-scm](plugins/claude-plastic-scm/README.md) | PlasticSCM (Unity Version Control) 워크플로우 자동화 | 체크인, 코멘트, 병합, 브랜치 조회, 상태, 이력, 비교 |
+| [claude-plastic-scm](plugins/claude-plastic-scm/README.md) | PlasticSCM (Unity Version Control) 워크플로우 자동화 | 체크인, 코멘트, 컴파일 체크, 병합, 브랜치 조회, 상태, 이력, 비교 |
 
 ---
 
