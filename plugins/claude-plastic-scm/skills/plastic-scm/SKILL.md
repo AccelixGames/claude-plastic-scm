@@ -104,6 +104,7 @@ This plugin also provides slash commands for common workflows:
 | `/cm-status` | Categorized workspace status |
 | `/cm-history` | File/directory change history |
 | `/cm-compile-check` | Check Unity compile errors |
+| `/cm-hidden` | View and manage hidden changes and ignore patterns |
 | `/cm-diff` | Compare changesets/branches/labels |
 
 ## Troubleshooting

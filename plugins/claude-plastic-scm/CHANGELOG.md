@@ -3,6 +3,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.7.0] - 2026-03-06
+
+### 추가
+- `/cm-hidden` — 비공개/숨김 변경 관리 커맨드 (hidden changes + ignore.conf 열람·수정)
+
 ## [1.6.0] - 2026-03-06
 
 ### 추가
