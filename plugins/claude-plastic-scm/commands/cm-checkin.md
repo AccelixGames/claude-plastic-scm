@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(cm wi:*), Bash(cm status:*), Bash(cm checkin:*), Bash(cm find:*), Bash(cm log:*), Read, Edit, Write
+allowed-tools: Bash(cm wi:*), Bash(cm status:*), Bash(cm checkin:*), Bash(cm find:*), Bash(cm log:*), Bash(cm partial:*), Bash(cm add:*), Read, Edit, Write
 description: PlasticSCM checkin with smart comment generation — filters auto-generated files, supports user comments, archives filter patterns (체크인/커밋/푸시)
 argument-hint: "[additional comment]"
 ---
@@ -85,9 +85,40 @@ Show the user:
 - Ask: "위 파일들을 체크인합니다. 제외할 파일이 있으면 알려주세요."
 - If the user wants to exclude specific files, remove them from the file list before proceeding.
 
-### Step 6: Execute checkin
+### Step 6: Prepare files for checkin
 
-Once confirmed, **explicitly specify all files** to guarantee inclusion regardless of PlasticSCM GUI check state:
+Before executing checkin, parse file status codes and run required pre-processing.
+
+1. Run `cm status --machinereadable` and parse the status code for each file in the confirmed file list.
+
+2. **Status code reference:**
+
+   | Code | Meaning | Action |
+   |------|---------|--------|
+   | CO | Checked out | Ready — no action needed |
+   | AD | Added (already `cm add`ed) | Ready — no action needed |
+   | CH | Changed without checkout | Run `cm partial checkout "{file}"` |
+   | PR | Private (untracked) | Run `cm add "{file}"` |
+
+3. **Process CH files** — For each CH file, run:
+   ```
+   cm partial checkout "{file}"
+   ```
+
+4. **Process PR files** — For each PR file:
+   - If the file is inside a new directory that is also PR, `cm add` the directory first.
+   - Then run:
+     ```
+     cm add "{file}"
+     ```
+
+5. Show a brief summary: "전처리 완료: CH {n}개 checkout, PR {n}개 add"
+
+6. If any pre-processing command fails, show the error and ask the user how to proceed.
+
+### Step 7: Execute checkin
+
+Once prepared, **explicitly specify all files** to guarantee inclusion regardless of PlasticSCM GUI check state:
 ```
 cm checkin "{file1}" "{file2}" ... -c="{comment}"
 ```
@@ -98,7 +129,7 @@ cm checkin "{file1}" "{file2}" ... -c="{comment}"
 
 **Important:** Do NOT use bare `cm checkin -c="{comment}"` without file arguments — this only commits "checked" files in PlasticSCM, which may silently skip primary changes that were unchecked in the GUI.
 
-### Step 7: Verify
+### Step 8: Verify
 
 Show the resulting changeset info to confirm success:
 ```

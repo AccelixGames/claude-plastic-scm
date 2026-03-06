@@ -6,6 +6,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.5.0] - 2026-03-06
+
+### 변경
+- claude-plastic-scm v1.4.0: `/cm-checkin` CH/PR 파일 자동 전처리 + `partial`/`add` 명령 참조 추가
+
 ## [1.4.0] - 2026-03-05
 
 ### 변경

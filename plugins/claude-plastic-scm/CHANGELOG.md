@@ -3,6 +3,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.4.0] - 2026-03-06
+
+### 추가
+- `/cm-checkin` Step 6: CH/PR 상태 파일 자동 전처리 — CH→`cm partial checkout`, PR→`cm add` 실행 후 체크인
+- `references/cm-commands.md`: `partial`, `add` 명령 참조 추가
+
 ## [1.3.0] - 2026-03-05
 
 ### 변경

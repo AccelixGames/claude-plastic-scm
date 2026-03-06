@@ -17,6 +17,8 @@ Detailed reference for PlasticSCM CLI commands used by the claude-plastic-scm pl
 12. [label](#label)
 13. [undo](#undo)
 14. [workspace](#workspace)
+15. [partial](#partial)
+16. [add](#add)
 
 ---
 
@@ -455,3 +457,65 @@ Shows current workspace info including branch, changeset, and repository.
 ```
 Branch /main/develop@MyRepo@localhost:8087
 ```
+
+---
+
+## partial
+
+Manage partial workspace configuration and file checkout.
+
+In partial workspaces, files modified locally without explicit checkout have status **CH** (Changed without checkout). These files must be checked out before they can be checked in.
+
+```
+cm partial {command} {paths} [options]
+```
+
+| Command | Description |
+|---------|-------------|
+| `checkout` | Check out files in partial workspace (CH → CO) |
+| `configure` | Configure partial workspace download paths |
+| `add` | Add paths to partial workspace configuration |
+| `undo` | Undo partial checkout |
+
+**Examples:**
+```bash
+# Check out a single CH file
+cm partial checkout "Assets/Scripts/Player.cs"
+
+# Check out multiple CH files
+cm partial checkout "Assets/Scripts/Player.cs" "Assets/Scenes/Main.unity"
+
+# Configure partial workspace paths
+cm partial configure /main/develop
+```
+
+---
+
+## add
+
+Register private (untracked) files for version control. Files with status **PR** (Private) must be added before they can be checked in.
+
+```
+cm add {paths} [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `-R` / `--recursive` | Add directories recursively |
+
+**Examples:**
+```bash
+# Add a single file
+cm add "Assets/Scripts/NewFile.cs"
+
+# Add a directory (registers the directory itself)
+cm add "docs/plans/"
+
+# Add a directory and all contents recursively
+cm add "docs/" -R
+
+# Add multiple files
+cm add "file1.cs" "file2.cs" "file3.cs"
+```
+
+**Note:** When adding files inside a new directory, add the parent directory first, then the files.
