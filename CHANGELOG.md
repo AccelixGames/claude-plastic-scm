@@ -6,6 +6,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.9.0] - 2026-03-20
+
+### 추가
+- win-file-tools v0.1.0: Windows 문서 도구 플러그인 — `win-file-reader` 파일 읽기 + 에러 패턴, `hwpx` HWP/HWPX 문서 생성/편집
+
 ## [1.8.0] - 2026-03-06
 
 ### 추가

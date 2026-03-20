@@ -17,6 +17,17 @@
       },
       "source": "./plugins/claude-plastic-scm",
       "category": "development"
+    },
+    {
+      "name": "win-file-tools",
+      "description": "Windows document tools — file reading with error patterns, HWP/HWPX creation and editing",
+      "version": "0.1.0",
+      "author": {
+        "name": "AccelixGames",
+        "email": "accelix.staff@gmail.com"
+      },
+      "source": "./plugins/win-file-tools",
+      "category": "productivity"
     }
   ]
 }
