@@ -1,0 +1,12 @@
+{
+  "name": "win-file-tools",
+  "version": "0.1.0",
+  "description": "Windows document tools — file reading with self-reinforcing error patterns, HWP/HWPX document creation and editing",
+  "author": {
+    "name": "AccelixGames",
+    "email": "accelix.staff@gmail.com"
+  },
+  "repository": "https://github.com/AccelixGames/accelix-ai-plugins",
+  "license": "MIT",
+  "keywords": ["windows", "pdf", "docx", "excel", "hwp", "hwpx", "file-reader", "document"]
+}
