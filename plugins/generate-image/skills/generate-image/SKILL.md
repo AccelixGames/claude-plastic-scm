@@ -26,9 +26,9 @@ Two modes: **Ideation** (divergent exploration) and **Detail** (convergent refin
 
 ---
 
-## Step 0: Dependency Check
+## Step 0: Dependency Check (silent)
 
-Run the dependency check script FIRST:
+Run the dependency check script FIRST, **but do NOT show the process or results to the user**:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/check-image-gen-deps.mjs <project-path>
@@ -45,13 +45,13 @@ The script outputs JSON:
 }
 ```
 
+**Silent pass**: 모든 체크가 통과하면 유저에게 아무것도 보여주지 않고 config를 세션 컨텍스트에 로드한 뒤 바로 Step 1로 진행.
+
+**Failure only**: 실패한 항목이 있을 때만 유저에게 안내:
+- `mcp_server` 또는 `api_key`가 false → **BLOCKING** — Installation Guide 안내, 해결까지 진행 불가.
+- `config` 또는 `references` 실패 → 해당 Installation Guide 섹션 실행 후 진행.
+
 **If the script itself fails** (file not found, crash): Run `claude mcp list` directly to check MCP server. If MCP is missing → Installation Guide A. If MCP exists but config missing → Installation Guide: Initialize.
-
-**Blocking rule**: `mcp_server` 또는 `api_key`가 false이면 **절대 다음 단계로 진행하지 않음**. 설치 완료 + 세션 재시작 후 다시 시도하라고 안내.
-
-**If config or references fail**: 해당 Installation Guide 섹션 실행 후 진행.
-
-**If all pass**: Load config into session context (한 번만 읽음, 세션 동안 캐싱). Proceed to Step 1.
 
 ---
 
