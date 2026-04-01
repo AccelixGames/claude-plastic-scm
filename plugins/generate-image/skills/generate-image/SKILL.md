@@ -124,6 +124,24 @@ The script outputs JSON:
 > 누락된 레퍼런스: [missing files list]
 >
 > 인게임 스크린샷 1장을 `.generate-image/references/[category].png`에 넣으면 해결됨.
+
+**클립보드 붙여넣기 (Windows 전용)**:
+
+Warning 표시 후, 다음 안내를 추가로 제공:
+
+> 채팅에 이미지를 붙여넣으면 클립보드에서 자동 저장합니다. 이미지를 복사(Ctrl+C) 후 채팅에 붙여넣으세요.
+
+유저가 채팅에 이미지를 붙여넣으면:
+
+1. **플랫폼 확인**: Windows인 경우에만 클립보드 저장 실행. 다른 OS에서는 "클립보드 자동 저장은 현재 Windows만 지원됩니다. 파일을 직접 복사해주세요." 안내.
+2. **클립보드 저장 실행**:
+   ```bash
+   powershell -ExecutionPolicy Bypass -File "C:/Users/chris/.claude/plugins/marketplaces/accelix-ai-plugins/plugins/generate-image/skills/generate-image/scripts/save-clipboard.ps1" -TargetPath "<missing-reference-absolute-path>"
+   ```
+3. **결과 확인**: 스크립트 stdout이 `OK`이면 성공, `NO_IMAGE`이면 "클립보드에 이미지가 없습니다. 이미지를 복사(Ctrl+C) 후 다시 시도해주세요." 안내.
+4. **파일 존재 검증**: 저장 후 해당 경로에 파일이 실제로 존재하는지 확인.
+5. 성공 시 → "레퍼런스 이미지 저장 완료: [path]" 안내 후 정상 플로우 계속.
+
 > 레퍼런스 없이 진행할까? (결과 품질이 크게 떨어짐)
 
 Wait for explicit confirmation.
