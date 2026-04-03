@@ -1,0 +1,12 @@
+{
+  "name": "discord-webhook",
+  "version": "0.1.0",
+  "description": "Discord webhook message and file delivery for Claude Code",
+  "author": {
+    "name": "AccelixGames",
+    "email": "accelix.staff@gmail.com"
+  },
+  "repository": "https://github.com/AccelixGames/accelix-ai-plugins",
+  "license": "MIT",
+  "keywords": ["discord", "webhook", "notification", "messaging"]
+}
