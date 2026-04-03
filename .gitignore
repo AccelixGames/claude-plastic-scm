@@ -9,3 +9,7 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# Others
+.superpowers/
+.superpowers
