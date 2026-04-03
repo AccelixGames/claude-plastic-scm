@@ -6,6 +6,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [2.1.0] - 2026-04-03
+
+### 추가
+- discord-webhook v0.1.0: Discord webhook 메시지/파일 발송 플러그인 — 다중 채널, 자연어 멘션, 파일 첨부
+
 ## [2.0.0] - 2026-03-30
 
 ### 추가
