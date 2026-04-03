@@ -27,9 +27,9 @@ The user provides arguments in this format:
 
 ### Step 1: Load config
 
-Read `.discord-webhook/config.json` using the Read tool.
+The config is already injected in the Context section above. Do NOT read it again with the Read tool.
 
-- If the file exists, proceed silently to Step 2.
+- If the config JSON is visible in Context, proceed silently to Step 2.
 - If `CONFIG_NOT_FOUND` appeared in Context above, ask the user:
 
   > "Discord webhook 설정이 없습니다. 지금 만들까요?"
@@ -113,15 +113,21 @@ Build the Discord webhook payload as a JSON file:
 
 If `avatar_url` is set in config (non-null), include it in the payload.
 
-Write the payload to `/tmp/discord-payload.json` using the Write tool, then invoke send.sh:
+**IMPORTANT: Use a single Bash call** with heredoc to create the payload file and invoke send.sh together. Do NOT use the Write tool for the payload — it causes path mismatch on Windows.
 
 **Without file attachment:**
 ```bash
+cat > /tmp/discord-payload.json << 'PAYLOAD'
+<your JSON payload here>
+PAYLOAD
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/send.sh" "<webhook_url>" "/tmp/discord-payload.json"
 ```
 
 **With file attachment:**
 ```bash
+cat > /tmp/discord-payload.json << 'PAYLOAD'
+<your JSON payload here>
+PAYLOAD
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/send.sh" "<webhook_url>" "/tmp/discord-payload.json" --file "<file_path>"
 ```
 
