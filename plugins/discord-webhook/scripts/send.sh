@@ -48,9 +48,9 @@ if [ -z "$attach_file" ]; then
         "$webhook_url" 2>&1)
 else
     # Message with file attachment (multipart/form-data)
-    payload_json=$(cat "$payload_file")
+    # Use <file syntax to read payload directly — avoids shell encoding corruption on Windows
     response=$(curl -s -w '\n%{http_code}' \
-        -F "payload_json=${payload_json}" \
+        -F "payload_json=<${payload_file}" \
         -F "file=@${attach_file}" \
         "$webhook_url" 2>&1)
 fi

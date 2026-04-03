@@ -6,7 +6,7 @@ argument-hint: "[channel] \"message\" [--file path] [--file-content filename]"
 
 ## Context
 
-- Config: !`cat .discord-webhook/config.json 2>/dev/null || echo "CONFIG_NOT_FOUND"`
+- Config: !`cat "$(git rev-parse --show-toplevel 2>/dev/null)/.discord-webhook/config.json" 2>/dev/null || echo "CONFIG_NOT_FOUND"`
 
 ## Your task
 
