@@ -3,6 +3,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [0.2.0] - 2026-04-03
+
+### 수정
+- `/discord` multipart 발송 시 한글 깨짐 수정 — `$(cat)` shell 변수 확장 대신 curl `<file` 직접 읽기
+- config 경로를 `git rev-parse --show-toplevel` 기준 절대경로로 변경 — cwd 무관하게 config 탐지
+- payload 생성을 Write 도구 대신 Bash heredoc으로 변경 — tool call 3회→1회, Windows `/tmp` 경로 불일치 해소
+
 ## [0.1.0] - 2026-04-03
 
 ### 추가

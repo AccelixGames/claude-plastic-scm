@@ -6,6 +6,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [2.2.0] - 2026-04-03
+
+### 변경
+- discord-webhook v0.2.0: 한글 인코딩 수정, config 경로 안정화, 실행 속도 개선 (tool call 3→1)
+
 ## [2.1.0] - 2026-04-03
 
 ### 추가
