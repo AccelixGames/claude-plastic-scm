@@ -6,6 +6,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [2.5.0] - 2026-04-06
+
+### 추가
+- chatgpt-agent v0.1.0: ChatGPT 서브에이전트 CLI 래퍼 — Codex CLI 기반, ChatGPT Plus 인증, API 크레딧 불필요
+
 ## [2.4.0] - 2026-04-03
 
 ### 변경

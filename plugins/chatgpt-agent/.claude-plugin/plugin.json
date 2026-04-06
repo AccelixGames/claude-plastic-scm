@@ -1,0 +1,9 @@
+{
+  "name": "chatgpt-agent",
+  "version": "0.1.0",
+  "description": "ChatGPT subagent CLI wrapper — Claude가 OpenAI API를 통해 ChatGPT에 작업을 위임할 수 있는 범용 도구",
+  "author": { "name": "AccelixGames", "email": "accelix.staff@gmail.com" },
+  "repository": "https://github.com/AccelixGames/accelix-ai-plugins",
+  "license": "MIT",
+  "keywords": ["chatgpt", "openai", "subagent", "second-opinion", "cross-validation"]
+}

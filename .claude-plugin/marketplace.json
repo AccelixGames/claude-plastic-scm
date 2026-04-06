@@ -50,6 +50,17 @@
       },
       "source": "./plugins/discord-webhook",
       "category": "communication"
+    },
+    {
+      "name": "chatgpt-agent",
+      "description": "ChatGPT subagent CLI wrapper — delegate tasks to ChatGPT via Codex CLI, ChatGPT Plus auth",
+      "version": "0.1.0",
+      "author": {
+        "name": "AccelixGames",
+        "email": "accelix.staff@gmail.com"
+      },
+      "source": "./plugins/chatgpt-agent",
+      "category": "ai"
     }
   ]
 }
