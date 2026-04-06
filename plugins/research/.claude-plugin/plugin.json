@@ -1,7 +1,7 @@
 {
   "name": "research",
   "version": "0.1.0",
-  "description": "인터넷 조사 시 키워드 협업 루프를 가이드하는 프로세스 스킬",
+  "description": "인터넷 조사 프로세스 스킬 — 키워드 협업 루프로 검색 정밀도를 점진적으로 높인다. 단순 문서 조회가 아닌 탐색·비교·종합이 필요한 조사 요청에 사용",
   "author": {
     "name": "AccelixGames",
     "email": "accelix.staff@gmail.com"
