@@ -1,0 +1,12 @@
+{
+  "name": "prof-oak-explain",
+  "version": "0.1.0",
+  "description": "문과식 설명 + 기술 교육 스킬 — 비유와 일상 언어로 기술 개념을 풀어 설명하면서 기술 원리도 함께 교육",
+  "author": {
+    "name": "AccelixGames",
+    "email": "accelix.staff@gmail.com"
+  },
+  "repository": "https://github.com/AccelixGames/accelix-ai-plugins",
+  "license": "MIT",
+  "keywords": ["explanation", "education", "non-technical", "korean", "beginner-friendly"]
+}
