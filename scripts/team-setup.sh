@@ -88,8 +88,11 @@ install_plugin() {
 }
 
 # 공식 플러그인
+install_plugin "superpowers"     "claude-plugins-official" "공식"
 install_plugin "frontend-design" "claude-plugins-official" "공식"
 install_plugin "skill-creator"   "claude-plugins-official" "공식"
+install_plugin "figma"           "claude-plugins-official" "공식"
+install_plugin "notion"          "claude-plugins-official" "공식"
 
 # 팀 플러그인
 install_plugin "claude-plastic-scm" "accelix-ai-plugins" "팀"
@@ -126,7 +129,49 @@ install_npm_global "@google/genai"              "@google/genai"        "node -e 
 
 echo ""
 
-# ── 4. 결과 리포트 ───────────────────────────────────────
+# ── 4. gstack 설치 ───────────────────────────────────────
+echo "--- gstack 설치 ---"
+
+GSTACK_REPO="https://github.com/garrytan/gstack.git"
+GSTACK_DIR="$HOME/github.com/AccelixGames/gstack"
+
+if [ -d "$GSTACK_DIR" ]; then
+  echo "✅ gstack 이미 설치됨 ($GSTACK_DIR)"
+  # 업데이트 시도
+  echo "   🔄 최신 버전 확인 중..."
+  if (cd "$GSTACK_DIR" && git pull --ff-only 2>&1) | grep -qi "already up to date"; then
+    echo "   ✅ 최신 버전"
+  else
+    echo "   🔄 업데이트 완료"
+  fi
+else
+  echo "📥 gstack 클론 중..."
+  mkdir -p "$(dirname "$GSTACK_DIR")"
+  if git clone "$GSTACK_REPO" "$GSTACK_DIR" 2>&1; then
+    echo "   ✅ gstack 클론 완료"
+  else
+    echo "   ⚠️  gstack 클론 실패"
+    echo "   수동 설치: git clone $GSTACK_REPO $GSTACK_DIR"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+# bun 설치 확인 (gstack 의존성)
+if command -v bun &>/dev/null; then
+  echo "✅ bun 확인됨"
+  if [ -d "$GSTACK_DIR" ]; then
+    echo "   📥 gstack 의존성 설치 중..."
+    (cd "$GSTACK_DIR" && bun install 2>&1) || true
+  fi
+else
+  echo "⚠️  bun 미설치 — gstack 일부 기능에 필요"
+  echo "   설치: curl -fsSL https://bun.sh/install | bash"
+  ERRORS=$((ERRORS + 1))
+fi
+
+echo ""
+
+# ── 5. 결과 리포트 ───────────────────────────────────────
 if [ $ERRORS -eq 0 ]; then
   echo "=== ✅ 설정 완료! ==="
 else
@@ -136,11 +181,13 @@ fi
 
 echo ""
 echo "다음 단계:"
-echo "  1. Gemini API key 설정 (이미지 생성 사용 시):"
+echo "  1. gstack dev-setup (프로젝트에 gstack 연결):"
+echo "     cd <프로젝트> && $GSTACK_DIR/bin/dev-setup"
+echo "  2. Gemini API key 설정 (이미지 생성 사용 시):"
 echo "     claude mcp add image-gen --scope user -e GEMINI_API_KEY=<key> -- npx -y mcp-image"
-echo "  2. gws 인증 (Google Sheets/Docs 사용 시):"
+echo "  3. gws 인증 (Google Sheets/Docs 사용 시):"
 echo "     gws auth login"
-echo "  3. Discord 웹훅 설정 (알림 사용 시):"
+echo "  4. Discord 웹훅 설정 (알림 사용 시):"
 echo "     프로젝트 루트에 .discord-webhook-config.json 생성"
 echo ""
 echo "문제가 있으면 규혁님(@neonstarQ)에게 문의하세요."
