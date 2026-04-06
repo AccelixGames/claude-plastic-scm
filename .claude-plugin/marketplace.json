@@ -61,6 +61,17 @@
       },
       "source": "./plugins/chatgpt-agent",
       "category": "ai"
+    },
+    {
+      "name": "research",
+      "description": "인터넷 조사 프로세스 스킬 — 키워드 협업 루프로 검색 정밀도를 점진적으로 높인다",
+      "version": "0.1.0",
+      "author": {
+        "name": "AccelixGames",
+        "email": "accelix.staff@gmail.com"
+      },
+      "source": "./plugins/research",
+      "category": "productivity"
     }
   ]
 }

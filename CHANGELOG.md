@@ -6,6 +6,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [2.6.0] - 2026-04-06
+
+### 추가
+- research v0.1.0: 인터넷 조사 프로세스 스킬 — 키워드 협업 루프로 검색 정밀도를 점진적으로 높인다
+
 ## [2.5.0] - 2026-04-06
 
 ### 추가
