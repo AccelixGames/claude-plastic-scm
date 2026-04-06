@@ -1,0 +1,12 @@
+{
+  "name": "research",
+  "version": "0.1.0",
+  "description": "인터넷 조사 시 키워드 협업 루프를 가이드하는 프로세스 스킬",
+  "author": {
+    "name": "AccelixGames",
+    "email": "accelix.staff@gmail.com"
+  },
+  "repository": "https://github.com/AccelixGames/accelix-ai-plugins",
+  "license": "MIT",
+  "keywords": ["research", "web-search", "조사", "리서치"]
+}
