@@ -100,6 +100,7 @@ install_plugin "generate-image"     "accelix-ai-plugins" "팀"
 install_plugin "win-file-tools"     "accelix-ai-plugins" "팀"
 install_plugin "discord-webhook"    "accelix-ai-plugins" "팀"
 install_plugin "prof-oak-explain"   "accelix-ai-plugins" "팀"
+install_plugin "chatgpt-agent"      "accelix-ai-plugins" "팀"
 
 echo ""
 
