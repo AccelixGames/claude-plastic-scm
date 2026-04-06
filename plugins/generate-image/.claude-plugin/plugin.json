@@ -1,7 +1,7 @@
 {
   "name": "generate-image",
-  "version": "0.1.0",
-  "description": "AI image generation for game design communication — ideation (divergent exploration) and detail (multi-view refinement) modes via Gemini/Imagen MCP",
+  "version": "0.2.0",
+  "description": "AI image generation for game design communication — ideation and detail modes via Gemini API (MCP + CLI wrapper for sub-agents)",
   "author": {
     "name": "AccelixGames",
     "email": "accelix.staff@gmail.com"

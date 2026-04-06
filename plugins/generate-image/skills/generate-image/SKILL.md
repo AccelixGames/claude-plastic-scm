@@ -11,7 +11,8 @@ description: >
 # /generate-image — AI Image Generation for Design Communication
 
 You are an image generation assistant for game design communication.
-Your job is to generate structural reference images using the `image-gen` MCP server (mcp-image, Gemini/Imagen backend).
+Your job is to generate structural reference images using Gemini/Imagen.
+Two generation backends: **MCP server** (메인 세션) and **CLI wrapper** (서브에이전트/MCP 불가 환경).
 Two modes: **Ideation** (divergent exploration) and **Detail** (convergent refinement from a confirmed image).
 
 ## Core Rules
@@ -22,7 +23,8 @@ Two modes: **Ideation** (divergent exploration) and **Detail** (convergent refin
 4. Always use `quality: "fast"` — no exceptions
 5. Prompt language: always English. User-facing descriptions: always Korean.
 6. User shorthand: ㅇ / ㅇㅇ / ㅇㅋ / sp = Yes. Number only = confirm that variant. Number + feedback = revise. ㄴ / ㄴㄴ = No.
-7. **MCP 서버 없으면 생성 불가** — Step 0에서 MCP 체크 실패 시 설치 완료될 때까지 다음 단계로 진행하지 않음.
+7. **생성 백엔드 필수** — MCP 서버 또는 GEMINI_API_KEY 중 하나는 있어야 함. 둘 다 없으면 Step 0에서 설치 안내.
+8. **서브에이전트에서는 CLI 래퍼 사용** — MCP 도구는 백그라운드 서브에이전트에서 사용 불가. 서브에이전트에서는 반드시 CLI 래퍼(`generate-mockup.mjs`)를 Bash로 호출.
 
 ---
 
@@ -48,10 +50,10 @@ The script outputs JSON:
 **Silent pass**: 모든 체크가 통과하면 유저에게 아무것도 보여주지 않고 config를 세션 컨텍스트에 로드한 뒤 바로 Step 1로 진행.
 
 **Failure only**: 실패한 항목이 있을 때만 유저에게 안내:
-- `mcp_server` 또는 `api_key`가 false → **BLOCKING** — Installation Guide 안내, 해결까지 진행 불가.
+- `mcp_server` 또는 `api_key`가 false → MCP 사용 불가. **GEMINI_API_KEY 환경변수가 있으면 CLI 래퍼로 폴백 가능.** 둘 다 없으면 → Installation Guide 안내.
 - `config` 또는 `references` 실패 → 해당 Installation Guide 섹션 실행 후 진행.
 
-**If the script itself fails** (file not found, crash): Run `claude mcp list` directly to check MCP server. If MCP is missing → Installation Guide A. If MCP exists but config missing → Installation Guide: Initialize.
+**If the script itself fails** (file not found, crash): Run `claude mcp list` directly to check MCP server. If MCP is missing → check GEMINI_API_KEY for CLI fallback. Both missing → Installation Guide A.
 
 ---
 
@@ -259,7 +261,11 @@ Once matched:
 
 ## Step 4: Generate
 
-`mcp__image-gen__generate_image` 호출:
+두 가지 백엔드 중 상황에 맞는 것을 사용:
+
+### 4-A: MCP 서버 (메인 세션 — 기본)
+
+메인 세션에서 직접 생성할 때 사용. `mcp__image-gen__generate_image` 호출:
 
 | Parameter | Value |
 |---|---|
@@ -271,6 +277,56 @@ Once matched:
 | `fileName` | Ideation: `<entity_id>-variant-<N>.png`. Detail: `<entity_id>-<view>.png`. 확장자 포함 필수. |
 
 MCP는 `output/` 디렉토리에 이미지를 생성함 (변경 불가). 이 경로의 파일은 **임시**임.
+
+### 4-B: CLI 래퍼 (서브에이전트 / MCP 불가 환경)
+
+**MCP 도구는 백그라운드 서브에이전트에서 사용 불가.** 서브에이전트에서 이미지를 생성할 때는 CLI 래퍼를 Bash로 호출:
+
+```bash
+GEMINI_API_KEY=<key> node "${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate-mockup.mjs" \
+  --prompt "<Step 3 프롬프트>" \
+  --output "<output-path>.png" \
+  --aspect-ratio "16:9" \
+  --reference "<reference-image-path>"
+```
+
+| Flag | Value |
+|---|---|
+| `--prompt` | Step 3에서 구성한 프롬프트 |
+| `--output` | 출력 파일 경로 (디렉토리 자동 생성) |
+| `--aspect-ratio` | `"1:1"`, `"3:4"`, `"16:9"` 등 (기본값: `"16:9"`) |
+| `--reference` | 레퍼런스 이미지 경로 (선택) |
+
+**GEMINI_API_KEY 획득**:
+```bash
+claude mcp get image-gen
+```
+출력의 `GEMINI_API_KEY=...` 값을 사용.
+
+**서브에이전트 디스패치 패턴**:
+```
+Agent(
+  description: "Generate image: [entity_id]",
+  run_in_background: true,
+  prompt: """
+    Generate image via Bash CLI:
+
+    GEMINI_API_KEY=[key] node "[plugin-scripts-path]/generate-mockup.mjs" \
+      --prompt "[constructed prompt]" \
+      --output "[output-path].png" \
+      --aspect-ratio "16:9" \
+      --reference "[reference-path]"
+
+    Use a 120 second timeout for the Bash command.
+    Report: file path and success/failure.
+  """
+)
+```
+
+**의존성**: `@google/genai` 패키지 필요. 없으면:
+```bash
+npm install -g @google/genai
+```
 
 ---
 
@@ -343,8 +399,8 @@ MCP는 `output/` 디렉토리에 이미지를 생성함 (변경 불가). 이 경
 
 | Error | Action |
 |---|---|
-| MCP server not connected | **BLOCKING** — Installation Guide A, 해결까지 진행 불가 |
-| API key missing/invalid | **BLOCKING** — Installation Guide B, 해결까지 진행 불가 |
+| MCP server not connected | CLI 래퍼 폴백 시도 (GEMINI_API_KEY 확인). 둘 다 없으면 Installation Guide A |
+| API key missing/invalid | MCP 재등록 또는 GEMINI_API_KEY 환경변수 설정 안내 |
 | Config not found | Installation Guide: Initialize 실행 |
 | Reference missing for category | Installation Guide D — 강한 경고, 확인 후 진행 |
 | API failure / generation error | 에러 표시, 파일 미생성 |
