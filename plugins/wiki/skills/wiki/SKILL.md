@@ -277,6 +277,40 @@ When user asks to save the answer:
 
 ---
 
+## Context
+
+Surface relevant wiki knowledge before starting work. No file writes.
+Shares Prerequisites with all other modes — failures produce explicit errors, no silent fallbacks.
+
+### Invocation
+
+`/wiki context <topic-keywords>`
+
+topic-keywords는 자유 텍스트. 예: `/wiki context agent02 implementer`, `/wiki context cooking system pipeline`.
+
+### Steps
+
+1. Read `wiki/index.md` — identify related entries from Entities, Concepts, Decisions tables.
+2. Search wiki + decisions (두 경로 병렬):
+   ```bash
+   obsidian search query="<keywords>" path="wiki" format=json
+   obsidian search query="<keywords>" path="decisions" format=json
+   ```
+3. Read top matches (max 5, priority: decision > entity > concept > session).
+4. Output summary to conversation:
+   - Per document: wikilink + relevance to current topic (1 line)
+   - 0 results: "관련 wiki 지식 없음"
+   - Search failure: 명시적 에러 보고 ("obsidian search failed: \<reason\>")
+5. Reference list는 대화 컨텍스트에 유지됨 — 별도 상태 저장 불필요.
+   Session Recording 시 대화에서 수집하여 `## 참조 문서`에 기록.
+
+### Query와의 차이
+
+- **Query**: 질문에 답하기 → 종합된 답변 출력. 파일 쓰기 없음 (archive 제외).
+- **Context**: 작업 전 관련 지식 surface → 문서별 1줄 시사점 출력 + 세션 기록 연동. 파일 쓰기 없음.
+
+---
+
 ## Lint
 
 Quality checks + knowledge integration. Recommended minimum cadence: weekly. Ad hoc runs supported. Single-operator assumption (no concurrent Lint runs).
