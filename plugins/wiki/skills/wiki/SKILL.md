@@ -502,7 +502,37 @@ confidence: high
 ---
 ```
 
-Body: goals, actions taken, decisions made, next steps, gotchas.
+Body structure:
+1. `## 목적` — session goals
+2. `## 참조 문서` — wiki context results (있을 때만, 아래 규칙 참조)
+3. 핵심 결정, Actions, Decisions, Next Steps, Gotchas 등
+4. `## 승격 후보` (있을 때만, Phase 1 참조)
+
+### 참조 문서 섹션 (`## 참조 문서`)
+
+`/wiki context` 실행 결과를 기록. `## 목적` 바로 다음에 배치.
+
+```markdown
+## 참조 문서
+
+- [[decisions/205-pipeline-architecture]] — 독립 세션 모델 전환 필요, 기존 디스패치 모델 전제 주의
+- [[wiki/entities/windows-ipc-patterns]] — Named Pipe 제약이 IPC 설계에 영향
+```
+
+0건일 때:
+
+```markdown
+## 참조 문서
+
+관련 wiki 지식 없음.
+```
+
+규칙:
+- `/wiki context` 실행했으면 반드시 기록. 0건도 기록.
+- `/wiki context` 미실행 세션은 `## 참조 문서` 섹션 자체 생략.
+- 세션 중간에 추가 참조한 wiki 문서(query 결과, 직접 읽은 entity 등)도 추가.
+- 최대 10건. 초과 시 decision > entity > concept > session 우선순위로 절삭.
+- 중복 wikilink 제거 (같은 문서 2번 참조 시 1건으로).
 
 ### Promotion Candidate Extraction (Phase 1)
 
