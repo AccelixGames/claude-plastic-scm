@@ -27,11 +27,13 @@
  */
 
 import { spawnSync } from 'child_process';
+import { readFileSync } from 'fs';
 import { parseArgs } from 'util';
 
 const { values } = parseArgs({
   options: {
     prompt:          { type: 'string', short: 'p' },
+    'prompt-file':   { type: 'string', short: 'f' },
     model:           { type: 'string', short: 'm' },
     'approval-mode': { type: 'string', default: 'yolo' },
     cwd:             { type: 'string' },
@@ -41,8 +43,19 @@ const { values } = parseArgs({
   strict: true,
 });
 
-if (!values.prompt) {
-  console.error('Usage: node ask-gemini.mjs --prompt "..." [--model gemini-2.5-pro] [--approval-mode yolo] [--cwd /path] [--sandbox]');
+// Resolve prompt: --prompt-file takes precedence over --prompt
+let prompt = values.prompt;
+if (values['prompt-file']) {
+  try {
+    prompt = readFileSync(values['prompt-file'], 'utf8');
+  } catch (e) {
+    console.error(`Cannot read prompt file: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+if (!prompt) {
+  console.error('Usage: node ask-gemini.mjs --prompt "..." | --prompt-file path [--model gemini-2.5-pro] [--cwd /path] [--sandbox]');
   process.exit(1);
 }
 
@@ -51,13 +64,9 @@ if (!process.env.GEMINI_API_KEY) {
   process.exit(1);
 }
 
-// Shell-escape with double quotes (cross-platform)
-function shellEscape(s) {
-  return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$') + '"';
-}
-
-// Build command string with proper shell quoting
-let cmd = `gemini -p ${shellEscape(values.prompt)}`;
+// Always use stdin piping — avoids shell arg length limits and escaping issues
+// Gemini CLI: stdin content is prepended to -p prompt
+let cmd = `gemini -p " "`;  // minimal -p triggers headless mode; real prompt via stdin
 cmd += ` -o ${values['output-format']}`;
 cmd += ` --approval-mode ${values['approval-mode']}`;
 
@@ -69,6 +78,7 @@ if (values.sandbox) {
 }
 
 const spawnOpts = {
+  input: prompt,  // always pipe via stdin
   encoding: 'utf8',
   timeout: 300000, // 5 min
   shell: true,
@@ -86,15 +96,11 @@ if (result.error) {
   process.exit(1);
 }
 
-if (result.status !== 0) {
-  // Try to parse JSON error
-  const raw = result.stdout || result.stderr || '';
-  try {
-    const errData = JSON.parse(raw);
-    console.error(errData.error?.message || `Gemini exited with code ${result.status}`);
-  } catch {
-    console.error(raw.trim() || `Gemini exited with code ${result.status}`);
-  }
+// Handle non-zero exit gracefully — Windows UV assertion crash produces valid output
+// before crashing, so check for output content before treating as error
+if (result.status !== 0 && !result.stdout?.trim()) {
+  const raw = result.stderr || '';
+  console.error(raw.trim() || `Gemini exited with code ${result.status}`);
   process.exit(1);
 }
 
