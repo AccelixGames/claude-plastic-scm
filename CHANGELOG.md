@@ -6,6 +6,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [2.9.0] - 2026-04-10
+
+### 변경
+- claude-plastic-scm v1.7.0 → v1.8.0: `cm cat` 명령 섹션 추가, `cm add -R` 깊이 1단 한정 함정, 부모 폴더 private 상태 시 ignore 매칭 표시 버그, Windows 심볼릭 링크 미지원 문서화. `/cm-hidden`에 `hidden_changes.conf` 핵심 파일 경고 + ignore.conf 글로브 패턴 가이드 추가.
+
 ## [2.8.0] - 2026-04-07
 
 ### 추가

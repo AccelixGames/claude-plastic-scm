@@ -19,6 +19,7 @@ Detailed reference for PlasticSCM CLI commands used by the claude-plastic-scm pl
 14. [workspace](#workspace)
 15. [partial](#partial)
 16. [add](#add)
+17. [cat](#cat)
 
 ---
 
@@ -519,3 +520,36 @@ cm add "file1.cs" "file2.cs" "file3.cs"
 ```
 
 **Note:** When adding files inside a new directory, add the parent directory first, then the files.
+
+### Gotchas
+
+- **`-R` only descends one level** — `cm add path/ -R` adds the immediate children of `path/` and processes one level of subfolders, but **does NOT recurse into nested grandchildren**. Folders deeper than one level appear as `이(가) 제외되었습니다.` and must be added with additional `cm add` calls targeting the inner path.
+  - Example: to add `.claude/skills/nodecanvas-bt/references/*.md` you must run `cm add` separately for the references folder, then again for its files.
+  - Workaround: walk the tree bottom-up or run `cm add` repeatedly per depth level until `cm status .claude --private --ignored` shows only the truly ignored files.
+
+- **Parent-private state masks ignore evaluation** — When a parent folder is still `비공개` (private/untracked), Plastic reports **all** of its children as `무시 항목` in `cm status --ignored`, regardless of whether they actually match an `ignore.conf` pattern. Ignore matching is only re-evaluated correctly **after** the parent is added. Always add the parent first, then re-run status to see the real ignore state.
+
+- **Windows symlinks are invisible to Plastic** — `cm add` silently skips symbolic links on Windows; `cm status` does not list them at all. Symlinks under tracked folders cannot be checked in. Re-create them locally on each workspace instead.
+
+---
+
+## cat
+
+Read the contents of any file at a specific changeset directly from the server, without checking out a workspace at that revision.
+
+```
+cm cat "serverpath:{path}#cs:{id}"
+```
+
+Useful for inspecting how a config file (e.g. `hidden_changes.conf`, `manifest.json`) looked at a specific point in history when investigating which merge introduced a change.
+
+**Examples:**
+```bash
+# Read a file at a specific changeset
+cm cat "serverpath:/hidden_changes.conf#cs:2434"
+
+# Compare two versions side-by-side via shell
+cm cat "serverpath:/hidden_changes.conf#cs:2433" > /tmp/before.txt
+cm cat "serverpath:/hidden_changes.conf#cs:2434" > /tmp/after.txt
+diff /tmp/before.txt /tmp/after.txt
+```

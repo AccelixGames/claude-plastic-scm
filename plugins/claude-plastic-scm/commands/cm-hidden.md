@@ -115,5 +115,13 @@ If no argument or action is specified, present the summary (Step 3) and ask:
 - **hidden_changes.conf 파일명 매칭:** 경로 없이 파일명만 기록. 경로 내 어디든 해당 이름의 파일이 있으면 모두 숨김 처리됨.
 - **줄 삭제 = 즉시 반영:** 두 conf 파일 모두 줄을 삭제하면 즉시 효과가 해제됨.
 - **ignore.conf와 이미 추적 중인 파일:** ignore.conf에 패턴을 추가해도 이미 VCS에 등록된 파일에는 적용되지 않음. 추적 해제 후 무시해야 함.
+- **`hidden_changes.conf`에 핵심 파일을 넣지 말 것:** `manifest.json`, `Packages.lock` 같은 빌드·환경 핵심 파일이 들어가면 변경되어도 pending list에 안 잡혀서 체크인 누락 위험. Mac 빌더 등 머신 전용 설정용으로만 사용하고, 절대 머지로 다른 브랜치에 전파되면 안 됨.
+
+### ignore.conf 글로브 패턴 가이드
+
+- **부분 경로 글로브 동작 확인됨:** `.claude/*.local.*` 같은 path-prefixed glob은 정상 동작 — 해당 폴더 직속 자식 중 패턴 매칭만 무시함.
+- **부모 폴더가 private 상태일 때 함정:** 부모 폴더가 아직 add 안 된 `비공개` 상태면, `cm status .claude --private --ignored`가 자식들을 **전부 `무시 항목`으로 표시**함 (실제로는 패턴 매칭 안 되는 파일까지). 패턴 동작을 검증하려면 반드시 부모 폴더부터 `cm add` 후 다시 status를 봐야 함.
+- **`cm add -R`은 깊이 1단만 처리:** 손자/증손자 폴더는 따로 `cm add` 호출 필요. 패턴 검증 전 폴더 트리 전체를 add 완료해야 정확한 ignore 상태를 볼 수 있음.
+- **Windows 심볼릭 링크 미지원:** 심링크는 `cm add`/`cm status` 어디에도 안 잡힘. ignore 패턴과 무관하게 추적 불가.
 
 Do not use any other tools. Do not send any other text or messages besides these tool calls.

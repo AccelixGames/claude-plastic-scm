@@ -1,6 +1,6 @@
 {
   "name": "claude-plastic-scm",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "PlasticSCM (Unity Version Control) workflow automation for Claude Code",
   "author": {
     "name": "AccelixGames",

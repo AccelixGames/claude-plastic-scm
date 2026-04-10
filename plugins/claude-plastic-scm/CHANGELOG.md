@@ -3,6 +3,18 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.8.0] - 2026-04-10
+
+### 추가
+- `references/cm-commands.md`: `cm cat "serverpath:{path}#cs:{id}"` 명령 섹션 — 특정 changeset의 파일 내용을 워크스페이스 전환 없이 직접 조회 (머지 히스토리 추적 시 유용)
+- `references/cm-commands.md` `add` 섹션 Gotchas:
+  - `cm add -R`이 깊이 1단만 처리하는 함정 (손자/증손자는 별도 add 호출 필요)
+  - 부모 폴더가 `비공개` 상태일 때 자식의 ignore 매칭이 전부 `무시 항목`으로 잘못 표시되는 동작
+  - Windows 심볼릭 링크가 `cm add`/`cm status`에서 아예 인식되지 않는 한계
+- `/cm-hidden` Important notes 확장:
+  - `hidden_changes.conf`에 핵심 파일(`manifest.json` 등)을 넣으면 안 되는 이유 (체크인 누락 위험)
+  - ignore.conf 글로브 패턴 가이드 (`.claude/*.local.*` 동작 확인, 부모 private 상태 함정, 검증 절차)
+
 ## [1.7.0] - 2026-03-06
 
 ### 추가
