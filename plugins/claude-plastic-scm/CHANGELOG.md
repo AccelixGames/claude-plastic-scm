@@ -3,6 +3,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.8.1] - 2026-04-10
+
+### 추가
+- `references/cm-commands.md` `diff` 섹션: **GUI Trap** 경고 — 파일 경로 인자 지정 시 비교 창이 열려 자동화가 hang되는 동작 문서화. 텍스트 전용 대안 3가지 (`--format`, `cm cat` 조합, `--download=` 옵션) 명시.
+
 ## [1.8.0] - 2026-04-10
 
 ### 추가

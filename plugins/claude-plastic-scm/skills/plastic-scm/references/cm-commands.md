@@ -230,6 +230,27 @@ cm diff {spec1} {spec2} [options]
 | `--download={path}` | Save diff content |
 | `--nototal` | Suppress record count |
 
+### ⚠️ GUI Trap — Path Argument Opens Compare Window
+
+When a **file path** is passed to `cm diff` alongside a changeset/branch/rev spec, PlasticSCM launches the graphical compare window instead of printing to stdout. The command blocks until the GUI is closed, which hangs automation.
+
+**Forms that open the GUI:**
+```bash
+cm diff cs:A cs:B path/to/file           # path arg → GUI
+cm diff rev:file#cs:A rev:file#cs:B      # rev spec pair → GUI
+cm diff br:/main/feature path/to/file    # branch + path → GUI
+```
+
+**Text-only alternatives (no GUI):**
+
+| Goal | Command |
+|------|---------|
+| Changed file list | `cm diff cs:A cs:B --format="{path}\|{status}" --nototal` |
+| File content diff (text) | `cm cat "serverpath:{path}#cs:A" > a.txt && cm cat "serverpath:{path}#cs:B" > b.txt && diff a.txt b.txt` |
+| Save both revisions to disk | `cm diff cs:A cs:B path/to/file --download="C:/tmp/diffout"` |
+
+`--download={dir}` saves both revisions of the file(s) into the directory without launching the GUI, which is the official CLI-only workflow for per-file comparison.
+
 ---
 
 ## merge
