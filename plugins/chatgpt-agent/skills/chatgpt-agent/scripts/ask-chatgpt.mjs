@@ -16,13 +16,19 @@
  *   - codex CLI installed: npm install -g @openai/codex
  *   - codex login done: codex login
  *
- * Output:
- *   stdout — ChatGPT response text (parsed from codex output)
- *   stderr — errors
+ * Note:
+ *   `codex exec` does NOT support --system-prompt.
+ *   --system is prepended to the prompt as an instruction block.
+ *   Prompt is written to a temp file to avoid Windows shell escaping issues
+ *   with JSON, Korean text, semicolons, and curly braces.
  */
 
 import { spawnSync } from 'child_process';
 import { parseArgs } from 'util';
+import { writeFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { randomUUID } from 'crypto';
 
 const { values } = parseArgs({
   options: {
@@ -39,27 +45,34 @@ if (!values.prompt) {
   process.exit(1);
 }
 
-// Shell-escape a string for cross-platform use
-function shellEscape(s) {
-  return `"${s.replace(/"/g, '\\"')}"`;
-}
+// Merge system instruction into prompt (codex exec has no --system-prompt)
+const fullPrompt = values.system
+  ? `[System instruction] ${values.system}\n\n---\n\n${values.prompt}`
+  : values.prompt;
 
-// Build command string with proper quoting
-let cmd = `codex exec ${shellEscape(values.prompt)} -s ${values.sandbox}`;
+// Write prompt to temp file to avoid shell escaping issues on Windows
+const tmpFile = join(tmpdir(), `codex-prompt-${randomUUID()}.txt`);
+writeFileSync(tmpFile, fullPrompt, 'utf-8');
 
-if (values.model) {
-  cmd += ` -m ${values.model}`;
-}
-if (values.system) {
-  cmd += ` --system-prompt ${shellEscape(values.system)}`;
-}
+let result;
+try {
+  // Use PowerShell Get-Content to safely inject the file content
+  const promptReader = `$(Get-Content -Raw '${tmpFile.replace(/'/g, "''")}')`;
+  let cmd = `codex exec ${promptReader} -s ${values.sandbox}`;
 
-const result = spawnSync(cmd, {
-  encoding: 'utf8',
-  timeout: 300000, // 5 min
-  shell: true,
-  env: { ...process.env, NO_COLOR: '1' },
-});
+  if (values.model) {
+    cmd += ` -m ${values.model}`;
+  }
+
+  result = spawnSync(cmd, {
+    encoding: 'utf8',
+    timeout: 300000, // 5 min
+    shell: 'powershell.exe',
+    env: { ...process.env, NO_COLOR: '1' },
+  });
+} finally {
+  try { unlinkSync(tmpFile); } catch {}
+}
 
 if (result.error) {
   console.error(`Codex exec failed: ${result.error.message}`);
