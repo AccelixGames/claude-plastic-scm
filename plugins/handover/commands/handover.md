@@ -8,12 +8,13 @@ allowed-tools: Bash, Write, Read, Glob, Grep, Agent
 
 You are generating a handover document so a NEW Claude Code session can continue this conversation's work. The new session has access to the same project (CLAUDE.md, memory, files) but has NO conversation context.
 
-**Principle: pure transfer. Do NOT prescribe what the next session should decide. The next session decides WITH the user.**
+**Principle: intent-anchored transfer.** Capture the fixed Intent the user is pursuing plus the current disposable state. The next session re-anchors on Intent with the user, then decides. Do NOT pick a solution for the next session — DO prescribe re-anchoring on Intent (process, not solution).
 
 ## Step 1: Conversation Scan
 
 Scan the conversation in REVERSE order and collect:
 
+- [ ] **Top-level Intent**: what the user ultimately wants in this conversation — the fixed target. Distinct from the current solution being attempted (solutions are disposable, intent is fixed)
 - [ ] User's verbatim instructions (do not paraphrase)
 - [ ] Options discussed and REJECTED, with reasons
 - [ ] Agreements reached but NOT recorded in any file
@@ -31,14 +32,14 @@ The primary value of this handover is capturing what files do NOT already record
 ```
 # Handover: <topic in 1 line>
 
-## Status
-- Done: <items>
-- In progress: <items>
-- Blocked: <items, with root cause>
-- Pending user decision: <items with the concrete options discussed>
+## Intent
+<Top-level purpose the user is pursuing in this conversation. The fixed target — not a description of what was attempted. Everything below is a disposable solution serving this intent.>
 
 ## Next Step
-<Factual state of where we left off. If the next action depends on a user decision, write: "Next session: discuss with user — <options A / B / C>". Do NOT pick one.>
+<Factual state of where we left off. Include blockers (with root cause) and pending user decisions inline. If the next action depends on a user decision, write: "Next session: discuss with user — <options A / B / C>". Do NOT pick one.>
+
+## First Action for Next Session
+Re-anchor on Intent above with the user before acting. If friction appears later, return to Intent — solutions are disposable, intent is fixed.
 ```
 
 ### After required sections: free-form
@@ -105,5 +106,6 @@ EOF
 
 - Do NOT re-explain file contents — link with absolute path, the next session reads it
 - Do NOT repeat what CLAUDE.md or memory already says
-- Do NOT decide what the next session should do — only report state
+- Do NOT pick a solution for the next session — only report state and Intent
+- DO prescribe re-anchoring on Intent (it's process, not solution)
 - Only THIS conversation's context

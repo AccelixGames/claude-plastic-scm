@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.0 (2026-04-17)
+
+- **Added required `## Intent` section** at top of handover: captures the fixed top-level purpose the user is pursuing, separate from the disposable solution layer
+- **Added required `## First Action for Next Session`**: instructs next session to re-anchor on Intent with user before acting
+- **Removed `## Status` section** (Done / In progress / Blocked / Pending user decision) — Done is derivable from git log / files, In progress is redundant with Next Step, Blocked and Pending now inline in Next Step
+- **Principle updated**: "pure transfer" → "intent-anchored transfer". Prescribing re-anchoring on Intent is explicitly allowed (process, not solution)
+- **Rationale**: aligns handover structure with top-level purpose — "Align with user intent. Intent is fixed. Solutions are disposable. Re-anchor whenever you hit friction." Status layer was all solution-state with no intent anchor, so a fresh session could execute on a stale solution without ever verifying the target
+
 ## v1.1.1 (2026-04-17)
 
 - **Reviewer model = Sonnet** (was inherited from drafter). Sonnet runs the `--review` subagent — cheaper, faster, and a genuinely different model from the Opus drafter for stronger independence
