@@ -178,6 +178,22 @@ where branch = (SELECT cs.branch FROM changeset WHERE changesetid = 100)
 | `{newline}` | all |
 | `{tab}` | all |
 
+### ⚠️ Quoting Trap — Always Wrap WHERE in Double Quotes
+
+The `where` clause **must** be passed as a single argument wrapped in outer double quotes, with inner single quotes around string values. Never attempt to emit the outer quotes via backslash-escaping (`\'...\'` or `\''...'\''`) — on Windows Git Bash and other POSIX shells, those expand into literal apostrophes plus stray single-quote tokens, leaving an unclosed string that fails with `unexpected EOF while looking for matching '`.
+
+**Wrong (produces `exit 2`, EOF error):**
+```bash
+cm find revs where branch=\''/main/beta'\'' and changeset=3472 --format=\''{item}''
+```
+
+**Right (single argument, outer `"` + inner `'`):**
+```bash
+cm find revs "where branch='/main/beta' and changeset=3472" --format="{item}"
+```
+
+When invoking from a JSON tool call (Claude Code Bash tool), only the inner single quotes are literal — do **not** backslash-escape the outer `"`; the JSON layer already handles that.
+
 **Examples:**
 ```bash
 # Changesets on a branch

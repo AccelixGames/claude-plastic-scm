@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.1 (2026-04-18)
+
+- **Fix: replace bash heredoc with `<` redirection in Step 4**. On Windows, the shell layer between Claude Code and bash would drop the heredoc framing and parse apostrophes inside the payload as unclosed shell quotes, aborting the command with `unexpected EOF while looking for matching '`. Writing the payload to a temp file first (via the Write tool) and piping with `<` bypasses quote parsing entirely and works uniformly on bash, cmd, and PowerShell.
+- **Rationale**: v1.2.0 already had the content fix in the marketplace source, but the plugin version was not bumped, so the cached installed copy at `cache/.../1.2.0/` kept serving the old heredoc instructions to the Skill tool. Bumping to 1.2.1 forces a fresh install on update.
+
 ## v1.2.0 (2026-04-17)
 
 - **Added required `## Intent` section** at top of handover: captures the fixed top-level purpose the user is pursuing, separate from the disposable solution layer

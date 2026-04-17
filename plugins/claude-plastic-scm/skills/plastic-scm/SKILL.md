@@ -82,6 +82,8 @@ cm find merge "where dstbranch='{path}' and dstchangeset > {id}"
 cm find branch "where parent='{path}'"
 ```
 
+**⚠️ Quoting:** Always wrap the entire `where ...` clause in outer `"` double quotes with inner `'` single quotes around values. Never emit the outer quotes via `\'` escapes — that produces unclosed-quote EOF errors on Git Bash. See `references/cm-commands.md` → `find` → "Quoting Trap" for details.
+
 ### Format Parameters
 `{changesetid}`, `{date}`, `{owner}`, `{comment}`, `{branch}`, `{name}`,
 `{path}`, `{type}`, `{status}`, `{repository}`, `{server}`
