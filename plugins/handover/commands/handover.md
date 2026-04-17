@@ -89,12 +89,15 @@ Skip Step 3 if `--review` is absent.
 
 ## Step 4: Save and Copy to Clipboard
 
-Pipe the handover text via heredoc directly to the script (no `cat` — avoids rtk UTF-8 corruption):
+Write the handover text to a temp file first, then pipe to the script via `<` redirection.
+Do NOT use a bash heredoc (`<< 'EOF'`) — on Windows, shell layers can drop heredoc framing
+and parse apostrophes in the content as unclosed shell quotes, aborting the command before
+the payload is sent. `<` redirection works on bash, cmd, and PowerShell.
 
 ```bash
-rtk python ~/.claude/plugins/marketplaces/*/plugins/handover/scripts/handover-clip.py << 'EOF'
-<handover content here>
-EOF
+# 1. Write via the Write tool to a temp path (e.g. C:\tmp\handover-text.md).
+# 2. Pipe to the script:
+python ~/.claude/plugins/marketplaces/*/plugins/handover/scripts/handover-clip.py < /c/tmp/handover-text.md
 ```
 
 **After the Bash call completes**, you MUST print the file path as plain conversation text so the user can see it outside the collapsed Bash output block. Format:
