@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.1 (2026-04-17)
+
+- **Reviewer model = Sonnet** (was inherited from drafter). Sonnet runs the `--review` subagent — cheaper, faster, and a genuinely different model from the Opus drafter for stronger independence
+- **Reviewer scope tightened**: added "Flag ONLY" / "Do NOT flag" rules to the review prompt. User-owned criteria (rubrics, thresholds, preferences), future-state decisions, and questions the handover explicitly defers are no longer flagged as gaps
+- **Rationale**: v1.1.0 self-test showed the Opus reviewer mis-classifying user-owned ambiguity (e.g. "no evaluation rubric defined") as high-severity gaps, inflating severity and noise
+
 ## v1.1.0 (2026-04-17)
 
 - **Pure transfer principle**: the handover no longer prescribes what the next session should do — it reports state; the next session decides WITH the user

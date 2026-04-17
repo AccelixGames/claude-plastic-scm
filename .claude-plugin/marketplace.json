@@ -109,7 +109,7 @@
     {
       "name": "handover",
       "description": "세션 핸드오버 문서 생성 + 클립보드 복사 — 다음 에이전트 세션에 컨텍스트 전달",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "AccelixGames",
         "email": "accelix.staff@gmail.com"

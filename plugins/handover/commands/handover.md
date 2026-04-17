@@ -54,10 +54,33 @@ Add whatever the next session needs: absolute-path file references, reasoning ch
 
 ## Step 3: Optional Independent Review
 
-If `$ARGUMENTS` contains `--review`, dispatch a general-purpose subagent:
+If `$ARGUMENTS` contains `--review`, dispatch a general-purpose subagent WITH `model: "sonnet"` override (different model from the drafter = truly independent perspective; cheaper and faster for a constrained gap-check task):
 
 - Input: draft handover text + all absolute file paths referenced in it
-- Task: "You have NO context about a previous conversation. Using ONLY this handover document and the files it references, can you continue the work described in Status + Next Step? List every gap: ambiguous references, implicit assumptions, uncaptured rejected options, blockers without root cause. Do NOT suggest fixes — only identify gaps. Return JSON: { gaps: [...], severity: high|med|low }"
+- Task prompt (verbatim):
+
+  ```
+  You have NO context about a previous conversation. Using ONLY this handover
+  document and the files it references, can you continue the work described
+  in Status + Next Step?
+
+  Flag ONLY:
+  - Information explicitly discussed in the conversation but not captured
+  - References that cannot be resolved from the given file paths
+  - Implicit assumptions about prior state
+  - Blockers stated without a root cause
+
+  Do NOT flag as gaps:
+  - Criteria, rubrics, or thresholds that only the user can define
+  - Future-state decisions pending user input
+  - Preferences the previous session had no way to predict
+  - Questions the handover explicitly defers to the next session's user discussion
+
+  Do NOT suggest fixes — only identify gaps.
+
+  Return JSON: { can_continue, gaps: [{issue, severity: high|med|low, evidence}], overall_assessment }
+  ```
+
 - Apply findings to a revised draft. **One round only** (no loops).
 
 Skip Step 3 if `--review` is absent.
