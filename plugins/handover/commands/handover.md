@@ -1,59 +1,68 @@
 ---
 description: "Generate a handover document for the next agent session and copy to clipboard (핸드오버 문서 생성 + 클립보드 복사)"
-argument-hint: "[next step hint]"
-allowed-tools: Bash, Write, Read, Glob, Grep
+argument-hint: "[next step hint] [--review]"
+allowed-tools: Bash, Write, Read, Glob, Grep, Agent
 ---
 
 # Handover Document Generator
 
-You are generating a handover document so a NEW Claude Code session can continue this conversation's work seamlessly. The new session has access to the same project (CLAUDE.md, memory, files) but has NO conversation context.
+You are generating a handover document so a NEW Claude Code session can continue this conversation's work. The new session has access to the same project (CLAUDE.md, memory, files) but has NO conversation context.
 
-## Step 1: Analyze This Conversation
+**Principle: pure transfer. Do NOT prescribe what the next session should decide. The next session decides WITH the user.**
 
-Scan the full conversation and identify what the next agent NEEDS to know to continue. Focus on:
+## Step 1: Conversation Scan
 
-- What was the task, what got done, what's left
-- Reasoning, trade-offs, and agreements that are NOT recorded in any file
-- If the user provided an argument: `$ARGUMENTS` — use it as the next step hint
+Scan the conversation in REVERSE order and collect:
 
-## Step 1.5: Detect Skill Trigger
+- [ ] User's verbatim instructions (do not paraphrase)
+- [ ] Options discussed and REJECTED, with reasons
+- [ ] Agreements reached but NOT recorded in any file
+- [ ] Trade-offs explicitly weighed
+- [ ] Work blocked, with root cause
+- [ ] Open questions awaiting user decision
+- [ ] If `$ARGUMENTS` has text (excluding `--review`): use as a contextual hint
 
-If the conversation completed a **plan or design doc** (via /office-hours, /plan-eng-review, /plan-ceo-review, or similar) and the next step is **implementation**, add this line to the Next Step section:
-
-```
-⚡ SKILL TRIGGER: Run `superpowers:executing-plans` — design doc path provided in References.
-```
-
-Detection criteria (ANY of these):
-- Design doc status is APPROVED
-- Eng review status is CLEARED
-- User said "구현", "implement", "build it", "구현시작"
-- The argument ($ARGUMENTS) implies implementation
+The primary value of this handover is capturing what files do NOT already record.
 
 ## Step 2: Write the Handover
 
-### Required structure (only these two are mandatory):
+### Required structure
 
 ```
 # Handover: <topic in 1 line>
 
+## Status
+- Done: <items>
+- In progress: <items>
+- Blocked: <items, with root cause>
+- Pending user decision: <items with the concrete options discussed>
+
 ## Next Step
-<what the next agent should do first>
+<Factual state of where we left off. If the next action depends on a user decision, write: "Next session: discuss with user — <options A / B / C>". Do NOT pick one.>
 ```
 
-### Everything else: free-form
+### After required sections: free-form
 
-After the required sections, write whatever the next agent needs to know — in whatever structure best fits this conversation. Use headings, bullets, prose, or any mix. No prescribed sections.
+Add whatever the next session needs: absolute-path file references, reasoning chains, reverted options, etc.
 
-### Hard rules:
+### Hard rules
+
 - English only (AI token optimization)
 - Terse, no filler
-- **File references**: absolute path as link, period. Do NOT re-explain file contents — the next agent can read the file itself
-  - Good: `See C:/WorkSpace/.../cooking-system/master-plan.md`
-  - Bad: `The master plan describes a 3-phase approach where...` (the agent will read the file)
-- Reasoning/trade-offs discussed in this conversation that are NOT in any file — this is the primary value of the handover. Write these in full.
+- File references: absolute path as link, period. Never re-explain file contents — the next session reads the file itself
+- **Content criterion**: EVERY rejected option, agreement, trade-off, and blocker from THIS conversation must be captured. Length is whatever that requires.
 
-## Step 3: Save and Copy to Clipboard
+## Step 3: Optional Independent Review
+
+If `$ARGUMENTS` contains `--review`, dispatch a general-purpose subagent:
+
+- Input: draft handover text + all absolute file paths referenced in it
+- Task: "You have NO context about a previous conversation. Using ONLY this handover document and the files it references, can you continue the work described in Status + Next Step? List every gap: ambiguous references, implicit assumptions, uncaptured rejected options, blockers without root cause. Do NOT suggest fixes — only identify gaps. Return JSON: { gaps: [...], severity: high|med|low }"
+- Apply findings to a revised draft. **One round only** (no loops).
+
+Skip Step 3 if `--review` is absent.
+
+## Step 4: Save and Copy to Clipboard
 
 Pipe the handover text via heredoc directly to the script (no `cat` — avoids rtk UTF-8 corruption):
 
@@ -71,7 +80,7 @@ EOF
 
 ## Rules
 
-- Do NOT re-explain file contents — link with absolute path, the next agent reads it
+- Do NOT re-explain file contents — link with absolute path, the next session reads it
 - Do NOT repeat what CLAUDE.md or memory already says
+- Do NOT decide what the next session should do — only report state
 - Only THIS conversation's context
-- **Length guide**: 20–40 lines typical. Up to 80 if reasoning chain would be lost. Never exceed 100.
