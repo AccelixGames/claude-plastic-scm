@@ -44,7 +44,8 @@ Create these files when initializing a new wiki:
 
 - **wiki/index.md**: frontmatter `type: index, tags: [topic/wiki-system]`. Body: `# Wiki Index` with empty tables for Concepts, Entities, Decisions (cross-ref), and link to `[[wiki/sessions/index]]`.
 - **wiki/log.md**: frontmatter `type: log`. Body: `# Wiki Log` append-only. First entry: `## [YYYY-MM-DD] setup | Wiki initialized`.
-- **wiki/sessions/index.md**: frontmatter `type: session-archive`. Body: `# Sessions` with Current Week table (Session/Summary/Date) and empty Archives section.
+- **wiki/sessions/index.md**: frontmatter `type: session-archive`. Body: `# Sessions` with a bullet list of weekly folder links (`- [[wiki/sessions/YYMM-WN/index]]`). No session rows. Initially empty list.
+- **wiki/sessions/YYMM-WN/index.md** (per week, lazily created): frontmatter `type: session-archive`. Body: a single table `| Session | Summary | Date |` for that week's sessions.
 - Create empty directory: `wiki/entities/`.
 
 ---
@@ -180,11 +181,16 @@ Per candidate:
 
 **Safety:** `promoted: true` only after all candidates done. Crash → reprocess next run (dedup-safe).
 
-### Session Index Cleanup
+### Session Index Verification
 
-Move past-week entries from `wiki/sessions/index.md` to `wiki/sessions/YYMM-WN/index.md`.
-Week formula: `N = ceil(day_of_month / 7)`. After cleanup, main index has current week only.
-Create target `YYMM-WN/index.md` (type: session-archive) if missing. Lint moves table entries, not files.
+Main `wiki/sessions/index.md` is a folder-link list — no session rows.
+Week formula: `N = ceil(day_of_month / 7)`.
+
+Checks (auto-fix where possible):
+- Every `wiki/sessions/YYMM-WN/` dir with `2*.md` session files must have a matching `index.md`. Missing → create from Init Template.
+- Main `sessions/index.md` must list every existing weekly folder as `- [[wiki/sessions/YYMM-WN/index]]`. Missing link → add. Link to nonexistent folder → remove.
+- If main `sessions/index.md` contains a session row (wikilink to a `YYYY-MM-DD-*.md` file), that row is a legacy leftover → move it to the correct `YYMM-WN/index.md`.
+- Each weekly `index.md` table must include every session file in its folder. Missing row → add with placeholder summary. Row pointing to nonexistent file → mark `[MISSING]`.
 
 ### Log Quarterly Rotation
 
@@ -197,6 +203,7 @@ At first Lint of new quarter: rename old entries to `log-YYYY-QN.md`, create fre
 - **Raw references**: sources field → missing raw/ file → search. One match → fix. Else → report.
 - **See Also**: within topic dir, add missing cross-refs, remove dead links.
 - **Frontmatter**: required fields (title, type, tags, created, updated). Missing → report.
+- **Table structure**: for every markdown table in wiki/, verify `header row → separator row (| --- | ... |) → data rows`, with no orphan separator rows mid-table and no data rows before the separator. Violations → report with file + line.
 
 ### Heuristic Checks (report only)
 
@@ -272,8 +279,9 @@ Rules: only reusable knowledge (not work logs). When uncertain, include — Lint
 
 ### Post-Session
 
-1. Add row to `wiki/sessions/index.md`.
-2. Append: `## [YYYY-MM-DD] session | <topic>`
+1. Add row to `wiki/sessions/YYMM-WN/index.md` (the weekly index). Create the file from Init Template if missing.
+2. Ensure `wiki/sessions/index.md` lists this week's folder (e.g., `- [[wiki/sessions/YYMM-WN/index]]`). Add if missing. Main index never holds session rows.
+3. Append: `## [YYYY-MM-DD] session | <topic>`
 
 ---
 
