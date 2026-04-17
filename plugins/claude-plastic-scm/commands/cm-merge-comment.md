@@ -1,102 +1,112 @@
 ---
-allowed-tools: Bash(cm merge:*), Bash(cm find:*), Bash(cm changeset:*), Bash(cm wi:*)
-description: Server-side merge to target branch + consolidate sub-branch comments (서버 사이드 병합 + 코멘트 정리)
+allowed-tools:
+  - Bash(cm merge:*)
+  - Bash(cm find:*)
+  - Bash(cm changeset:*)
+  - Bash(cm wi:*)
+description: Server-side merge current PlasticSCM branch into target branch + consolidate sub-branch comments into the resulting merge changeset. Use for "서버 사이드 병합", "merge with comment consolidation", "sub-branch 코멘트 정리".
 argument-hint: "<target-branch-path>"
+disable-model-invocation: true
 ---
 
 ## Context
 
-- Workspace info: !`cm wi 2>/dev/null`
+- Workspace info: !`cm wi 2>/dev/null || echo "NOT_A_WORKSPACE"`
 
-## Your task
+## Task
 
-Merge the current branch into a target branch using server-side merge (no workspace switch), then collect and consolidate all sub-branch comments into the resulting merge changeset.
+Server-side merge (no workspace switch), then collect + consolidate all sub-branch comments into the merge changeset.
 
-### Arguments
+### Step 0 — Workspace guard
 
-- If `$ARGUMENTS` contains a branch path (e.g., `/main/release`), use that as the **target branch**.
-- If `$ARGUMENTS` is empty, ask the user: "어떤 브랜치로 병합할까요? (예: /main/release)"
+If context contains `NOT_A_WORKSPACE` or is empty, stop:
+- PlasticSCM workspace가 아님. git repo면 `git merge`/PR 사용.
 
-The **source branch** is always the current workspace branch (parsed from workspace info above).
+### Args
 
-### Step 1: Confirm merge direction
+- `$ARGUMENTS` = target branch path (e.g. `/main/release`).
+- If empty, ask: "어떤 브랜치로 병합할까? (예: /main/release)"
 
-Show the user the merge direction and ask for confirmation:
-- **소스 (현재):** `{source_branch}`
-- **대상:** `{target_branch}`
-- "위 방향으로 서버 사이드 병합을 진행합니다. 계속할까요?"
+Source branch = current workspace branch.
 
-### Step 2: Execute server-side merge
+### Step 1 — Confirm direction
 
-Run the merge without switching branches:
-```
-cm merge br:{source_branch} --to=br:{target_branch} --merge
-```
+Show merge direction and ask confirmation:
+- **소스 (현재):** `{source}`
+- **대상:** `{target}`
+- "위 방향으로 서버 사이드 병합 진행?"
 
-- If the merge succeeds, proceed to Step 3.
-- If the merge fails due to conflicts, show the error and stop. Inform the user: "충돌이 발생했습니다. PlasticSCM GUI에서 충돌을 해결하거나, 워크스페이스를 대상 브랜치로 전환하여 수동 병합해 주세요."
-- If there is nothing to merge, inform the user and stop.
-
-### Step 3: List changesets on the target branch
+### Step 2 — Execute merge
 
 ```
-cm find changeset "where branch='{target_branch}'" --format="{changesetid}|{date}|{comment}" --nototal
+cm merge br:{source} --to=br:{target} --merge
 ```
 
-Take the last two lines: latest (last) and previous (second-to-last).
-If there are fewer than 2 changesets, the merge created the first changeset — use only the latest and skip comment collection.
+- Success → Step 3.
+- Conflicts → show error, stop. Inform: "충돌 발생. GUI에서 해결하거나, 워크스페이스를 대상 브랜치로 전환 후 수동 병합."
+- Nothing to merge → inform, stop.
 
-### Step 4: Find all merges into the target branch
+### Step 3 — Latest changesets on target
 
 ```
-cm find merge "where dstbranch='{target_branch}'" --format="{dstchangeset}|{srcchangeset}|{srcbranch}" --nototal
+cm find changeset "where branch='{target}'" --format="{changesetid}|{date}|{comment}" --nototal
 ```
 
-Identify merges where `dstchangeset == latest` (these are the new merges since previous).
+Take last 2 rows: `latest` (last) and `prev` (2nd-to-last).
+If only 1 changeset exists, merge created the first one — skip comment collection, use latest only.
 
-### Step 5: Collect sub-branch comments
+### Step 4 — Find merges into target
 
-For each merge source, find the previous merge from the same source branch to determine the changeset range. Then query sub-branch changesets in that range:
+```
+cm find merge "where dstbranch='{target}'" --format="{dstchangeset}|{srcchangeset}|{srcbranch}" --nototal
+```
+
+Filter rows where `dstchangeset == latest` — these are new merges since `prev`.
+
+### Step 5 — Collect sub-branch comments
+
+For each merge source, find previous merge from same source to determine changeset range:
 ```
 cm find changeset "where branch='{srcbranch}' and changesetid > {prevSrcCS} and changesetid <= {srcCS}" --format="{changesetid}|{comment}" --nototal
 ```
 
-**Recursively check sub-branches** (max 3 levels deep). For each source branch in the range, check if it received merges from deeper sub-branches:
+**Recursively check sub-branches** (max 3 levels deep):
 ```
 cm find merge "where dstbranch='{srcbranch}' and dstchangeset > {prevSrcCS} and dstchangeset <= {srcCS}" --format="{srcchangeset}|{srcbranch}|{srccomment}" --nototal
 ```
 
-For each deeper sub-branch found, collect its changesets' comments.
+For each deeper source, collect its changeset comments.
 
-### Step 6: Format and confirm
+### Step 6 — Format
 
-- Group by sub-branch (use the last segment of the branch path as the header)
-- Format: `[BranchShortName]` header + `- comment` list
-- Skip empty comments and remove duplicates
-- Example:
-  ```
-  [feature-login]
-  - Added OAuth2 login flow
-  - Fixed token refresh logic
+- Group by sub-branch (use last path segment as header).
+- Format: `[BranchShortName]` header + `- comment` list.
+- Skip empty, dedupe.
 
-  [hotfix-ui]
-  - Resolved layout overflow on mobile
-  - Updated button styles
-  ```
-- Show the formatted comment to the user and ask for confirmation before applying.
-
-### Step 7: Apply comment
-
-Once confirmed:
+Example:
 ```
-cm changeset editcomment cs:{latest} "{combined_comment}"
+[feature-login]
+- Added OAuth2 login flow
+- Fixed token refresh logic
+
+[hotfix-ui]
+- Resolved layout overflow on mobile
+- Updated button styles
 ```
 
-Then verify:
+Show the combined comment, confirm with user.
+
+### Step 7 — Apply
+
+```
+cm changeset editcomment cs:{latest} "{combined}"
+```
+
+Verify:
 ```
 cm find changeset "where changesetid={latest}" --format="{changesetid}|{date}|{comment}" --nototal
 ```
 
-If no comments were found (all empty), inform the user and apply a default comment like "Merged {source_branch} into {target_branch}".
+If all collected comments are empty, apply default: "Merged {source} into {target}".
 
-Do not use any other tools. Do not send any other text or messages besides these tool calls.
+Use only the tools listed above.

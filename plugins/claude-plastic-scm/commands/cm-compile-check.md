@@ -1,58 +1,64 @@
 ---
-allowed-tools: Bash(ls:*), Bash(cat:*), Bash(tail:*), Bash(grep:*), Read
-description: Check Unity compile errors from Editor.log (Unity 컴파일 에러 확인)
+allowed-tools:
+  - Bash(ls:*)
+  - Bash(cat:*)
+  - Bash(tail:*)
+  - Bash(grep:*)
+  - Bash(cm wi:*)
+  - Read
+description: Check Unity compile errors from Editor.log for the current PlasticSCM workspace. Use for "Unity 컴파일 에러", "compile check", "Unity 빌드 상태".
 ---
 
 ## Context
 
-- Workspace info: !`cm wi 2>/dev/null`
+- Workspace info: !`cm wi 2>/dev/null || echo "NOT_A_WORKSPACE"`
 
-## Your task
+## Task
 
-Check whether the Unity project has compile errors by inspecting the Unity Editor log.
+Check whether the Unity project has compile errors via Editor.log.
 
-### Step 1: Determine project path
+### Step 0 — Workspace guard
 
-Extract the workspace path from `cm wi` output. This is the Unity project root (contains `Assets/`, `Library/`, `Temp/`).
+If context contains `NOT_A_WORKSPACE` or is empty, either:
+- Ask the user to confirm cwd is the Unity project root, or stop.
 
-### Step 2: Check Unity is running
+### Step 1 — Project path
+
+Parse workspace path from `cm wi` output (contains `Assets/`, `Library/`, `Temp/`).
+
+### Step 2 — Unity running?
 
 ```bash
 ls -la "{PROJECT_PATH}/Temp/UnityLockfile" 2>/dev/null && echo "UNITY_RUNNING" || echo "UNITY_NOT_RUNNING"
 ```
 
-- If `UNITY_NOT_RUNNING` → report "Unity 에디터가 실행 중이 아닙니다. 컴파일 상태를 확인할 수 없습니다." and stop.
+If `UNITY_NOT_RUNNING` → report "Unity 에디터가 실행 중이 아님. 컴파일 상태 확인 불가." and stop.
 
-### Step 3: Extract compile errors from Editor.log
+### Step 3 — Extract errors
 
 ```bash
 cat "$APPDATA/../Local/Unity/Editor/Editor.log" 2>/dev/null | grep -i "error CS\|## Script Compilation Error" | tail -30
 ```
 
-### Step 4: Determine current compile status
-
-Check whether errors are from the latest compilation or already resolved:
+### Step 4 — Current status
 
 ```bash
 tail -100 "$APPDATA/../Local/Unity/Editor/Editor.log" 2>/dev/null | grep -i "error CS\|Reloading assemblies after finishing script compilation"
 ```
 
 **Interpretation:**
-- If `Reloading assemblies after finishing script compilation` appears AFTER the last `error CS` line (or no `error CS` exists) → **no current errors**
-- If `error CS` lines appear AFTER the last `Reloading assemblies` line → **active compile errors**
+- `Reloading assemblies after finishing script compilation` AFTER last `error CS` (or no `error CS`) → **no current errors**.
+- `error CS` AFTER last `Reloading assemblies` → **active errors**.
 
-### Step 5: Report results
+### Step 5 — Report
 
-**No errors:**
-- "Unity 컴파일 에러 없음 (정상)"
+**No errors:** "Unity 컴파일 에러 없음 (정상)"
 
-**Active errors:**
-- List each unique error (deduplicate repeated lines from multiple compilation attempts):
-  ```
-  Unity 컴파일 에러 {n}개:
-  - {파일경로}({줄},{컬럼}): error CS{코드}: {메시지}
-  - ...
-  ```
-- Suggest: "에러를 수정한 후 다시 확인해 주세요."
+**Active errors:** deduplicate repeated lines and list:
+```
+Unity 컴파일 에러 {n}개:
+- {파일}({줄},{컬럼}): error CS{코드}: {메시지}
+```
+Suggest: "에러 수정 후 다시 확인."
 
-Do not use any other tools. Do not send any other text or messages besides these tool calls.
+Use only the tools listed above.

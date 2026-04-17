@@ -1,30 +1,34 @@
 ---
-allowed-tools: Bash(cm status:*), Bash(cm wi:*)
-description: Show workspace status grouped by change type (워크스페이스 상태)
+allowed-tools:
+  - Bash(cm status:*)
+  - Bash(cm wi:*)
+description: Show PlasticSCM workspace pending changes grouped by Added/Changed/Deleted/Moved/Private. Use for "cm status", "워크스페이스 상태", "pending changes".
 ---
 
 ## Context
 
-- Workspace info: !`cm wi 2>/dev/null`
-- Full status: !`cm status 2>/dev/null`
+- Workspace info: !`cm wi 2>/dev/null || echo "NOT_A_WORKSPACE"`
+- Full status: !`cm status 2>/dev/null || echo "NOT_A_WORKSPACE"`
 
-## Your task
+## Task
 
-Parse and present the workspace status in a clean, organized format.
+Present the workspace status cleanly.
 
-### Steps
+### Step 0 — Workspace guard
 
-1. **Show branch context** — Display the current branch and changeset from workspace info.
+If context above contains `NOT_A_WORKSPACE` or is empty, stop immediately:
+- 이 디렉토리는 PlasticSCM workspace가 아님. git repo일 가능성 — `/commit` 계열 사용 권장.
 
-2. **Categorize changes** — Group the status output by change type:
-   - **Added** — New files added to version control
-   - **Changed** — Modified files
-   - **Deleted** — Removed files
-   - **Moved** — Renamed or moved files
-   - **Private** — Untracked files (not under version control)
+### Step 1 — Branch context
 
-3. **Summary** — Show file counts per category and total.
+Show current branch + changeset from workspace info.
 
-If there are no pending changes, simply state that the workspace is clean.
+### Step 2 — Categorize
 
-Do not use any other tools. Do not send any other text or messages besides these tool calls.
+Group `cm status` output into: **Added**, **Changed**, **Deleted**, **Moved**, **Private** (untracked).
+
+### Step 3 — Summary
+
+Counts per category + total. If no pending changes, state workspace is clean.
+
+Use only the tools listed above.

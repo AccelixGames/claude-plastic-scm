@@ -1,163 +1,162 @@
 ---
-allowed-tools: Bash(cm wi:*), Bash(cm status:*), Bash(cm checkin:*), Bash(cm find:*), Bash(cm log:*), Bash(cm partial:*), Bash(cm add:*), Bash(ls:*), Bash(cat:*), Bash(tail:*), Bash(grep:*), Read, Edit, Write
-description: PlasticSCM checkin with smart comment generation — filters auto-generated files, supports user comments, archives filter patterns (체크인/커밋/푸시)
+allowed-tools:
+  - Bash(cm wi:*)
+  - Bash(cm status:*)
+  - Bash(cm checkin:*)
+  - Bash(cm find:*)
+  - Bash(cm log:*)
+  - Bash(cm partial:*)
+  - Bash(cm add:*)
+  - Bash(ls:*)
+  - Bash(cat:*)
+  - Bash(tail:*)
+  - Bash(grep:*)
+  - Read
+  - Edit
+  - Write
+description: PlasticSCM checkin with smart Korean comment generation — filters auto-generated files, collects user context, verifies Unity compile, explicitly lists files to avoid silent skips. Use for "체크인", "커밋", "push to Plastic", "변경사항 올려".
 argument-hint: "[additional comment]"
+disable-model-invocation: true
 ---
 
 ## Context
 
-- Workspace info: !`cm wi 2>/dev/null`
-- Pending changes: !`cm status --short 2>/dev/null`
-- Recent changesets (for comment style reference): !`cm find changeset "where branch = (SELECT cs.branch FROM changeset WHERE changesetid = (SELECT cs.changesetid FROM workspace))" --format="{changesetid}|{date}|{comment}" --nototal 2>/dev/null | tail -5`
+- Workspace info: !`cm wi 2>/dev/null || echo "NOT_A_WORKSPACE"`
+- Pending changes: !`cm status --short 2>/dev/null || echo "NOT_A_WORKSPACE"`
+- Recent changesets (tone reference): !`cm find changeset "where branch = (SELECT cs.branch FROM changeset WHERE changesetid = (SELECT cs.changesetid FROM workspace))" --format="{changesetid}|{date}|{comment}" --nototal 2>/dev/null | tail -5`
 
-## Your task
+## Task
 
-Create a PlasticSCM checkin (commit) with an intelligently generated comment. Filter out auto-generated files from the comment analysis, optionally collect additional user comments, and archive new filter patterns for future use.
+Create a PlasticSCM checkin with intelligent Korean comment + safe file inclusion.
 
-### Step 1: Load filter patterns
+### Step 0 — Workspace guard
 
-**Built-in ancillary patterns** (always excluded from comment analysis):
+If context contains `NOT_A_WORKSPACE` or is empty, stop:
+- PlasticSCM workspace가 아님. git repo면 `/commit`/`/ship` 사용.
+
+### Step 1 — Filter patterns
+
+**Built-in ancillary** (excluded from comment, kept in checkin):
 - Extensions: `.meta`
 - Directories: `Library/`, `Logs/`, `Temp/`, `obj/`, `UserSettings/`
 - Files: `*.csproj`, `*.sln`, `Packages/packages-lock.json`
 
-**Project archive** (additional patterns):
-- Check if `.claude/checkin-filters.local.md` exists in the workspace root using Read.
-- If it exists, load it and merge its "Ancillary Patterns" with the built-in list.
-- If it does not exist, use only the built-in patterns.
+**Project archive** — read `.claude/checkin-filters.local.md` at workspace root; merge "Ancillary Patterns" if present.
 
-### Step 2: Classify pending changes
+### Step 2 — Classify
 
-Classify each file from `cm status --short` into three groups:
+From `cm status --short`:
+1. **Primary** (include in comment analysis): common editable extensions — `.cs`, `.asset`, `.prefab`, `.unity`, `.json`, `.md`, `.txt`, `.shader`, `.cginc`, `.hlsl`, `.asmdef`, `.yaml`, `.yml`, `.xml`, `.png`, `.jpg`, `.wav`, `.mp3`, `.mat`, `.controller`, `.overrideController`, `.playable`, `.signal`, `.renderTexture`, `.lighting`, `.spriteatlas`, etc.
+2. **Ancillary** (exclude from comment, include in checkin): matches patterns above.
+3. **Unclassified** — ask per file:
+   - "이 파일은 코멘트 분석에 포함할까? (주요 변경 / 자동 생성 파일)"
+   - If auto-generated: "이 패턴을 앞으로도 자동 제외할까?"
+   - If yes, append pattern to `.claude/checkin-filters.local.md` (Edit or Write).
 
-1. **Primary changes** (include in comment analysis):
-   Files with extensions commonly edited directly — `.cs`, `.asset`, `.prefab`, `.unity`, `.json`, `.md`, `.txt`, `.shader`, `.cginc`, `.hlsl`, `.asmdef`, `.yaml`, `.yml`, `.xml`, `.png`, `.jpg`, `.wav`, `.mp3`, `.mat`, `.controller`, `.overrideController`, `.playable`, `.signal`, `.renderTexture`, `.lighting`, `.spriteatlas`, and any other clearly intentional file types.
+### Step 3 — Generate comment
 
-2. **Ancillary changes** (exclude from comment, include in checkin):
-   Files matching the built-in or archived ancillary patterns above.
+Analyze **primary only**.
 
-3. **Unclassified** (need user decision):
-   Files that don't match either group. Ask the user for each:
-   - "이 파일은 코멘트 분석에 포함할까요? (주요 변경 / 자동 생성 파일)"
-   - If the user says it's auto-generated, ask: "이 패턴을 앞으로도 자동 제외할까요?"
-   - If yes, add the pattern to `.claude/checkin-filters.local.md` using Edit (or Write if file doesn't exist).
-
-### Step 3: Generate comment
-
-Analyze only the **primary changes** and write a checkin comment following these rules:
-
-**Format — bullet point list:**
+**Format — bullet list:**
 ```
 - 작업 내용 1
 - 작업 내용 2
 ```
 
-Each bullet describes one logical change. Group related file changes into a single bullet.
+Each bullet = one logical change. Group related files.
 
 **Prefix rules** — each bullet MUST start with a category prefix:
 
 | Prefix | Usage | Example |
-|--------|-------|---------|
+|---|---|---|
 | (없음) | 신규 기능·콘텐츠 추가 | `- 플레이 테이블 시스템 구현` |
 | `수정:` | 버그 수정 | `- 수정: 연속퇴장 버그` |
 | `변경:` | 기존 동작·구조 변경 | `- 변경: CustomerSpawner → SO 기반 파이프라인` |
 | `제거:` | 코드·에셋 삭제 | `- 제거: 미사용 CustomerPool 클래스` |
 | `리팩토링:` | 동작 변경 없는 구조 개선 | `- 리팩토링: Actor.Customer 네임스페이스 통일` |
 
-- Prefix가 없으면 **신규 추가**로 간주 (가장 흔한 케이스).
-- 한 불렛에 prefix와 설명을 함께 쓴다. 별도 줄 분리 없음.
-- 최종 언어는 **한국어** 기본. 코드 식별자(클래스명, 메서드명)는 원문 유지.
-- If `$ARGUMENTS` contains text, treat it as additional user context and incorporate it into the comment.
-- If recent changesets have comments, reference their tone but always follow the bullet format above.
+- No prefix = 신규 추가 (default).
+- Prefix + 설명은 같은 줄에.
+- Language: **한국어**. Code identifiers: original.
+- If `$ARGUMENTS` has text, treat as user context and merge.
+- Reference tone of recent changesets but always follow bullet format.
 
-### Step 4: Collect user comment (optional)
+### Step 4 — Optional user comment
 
-- Ask: "추가로 남기고 싶은 코멘트가 있으신가요?"
-- If the user provides additional text, append it to or merge it with the generated comment.
-- If the user declines, use the auto-generated comment as-is.
+- Ask: "추가로 남기고 싶은 코멘트가 있어?"
+- If yes, append/merge with generated.
+- If no, use auto-generated.
 
-### Step 5: Present for confirmation
+### Step 5 — Confirmation
 
-Show the user:
-- **주요 변경** — List of primary change files (these WILL be included in the checkin)
-- **자동/부수 변경** — Count of ancillary files (collapsed, show details only if asked)
-- **최종 코멘트** — The proposed comment
-- Ask: "위 파일들을 체크인합니다. 제외할 파일이 있으면 알려주세요."
-- If the user wants to exclude specific files, remove them from the file list before proceeding.
+Show:
+- **주요 변경** — primary file list (WILL be checked in).
+- **자동/부수 변경** — ancillary count (collapsed; expand on request).
+- **최종 코멘트** — the proposed comment.
+- Ask: "위 파일들을 체크인. 제외할 파일 있으면 알려줘."
+- Remove excluded files before proceeding.
 
-### Step 6: Prepare files for checkin
+### Step 6 — Prepare files
 
-Before executing checkin, parse file status codes and run required pre-processing.
+Parse status codes via `cm status --machinereadable` for each confirmed file.
 
-1. Run `cm status --machinereadable` and parse the status code for each file in the confirmed file list.
+**Status codes:**
 
-2. **Status code reference:**
+| Code | Meaning | Action |
+|---|---|---|
+| CO | Checked out | Ready |
+| AD | Added (already `cm add`ed) | Ready |
+| CH | Changed without checkout | `cm partial checkout "{file}"` |
+| PR | Private (untracked) | `cm add "{file}"` |
 
-   | Code | Meaning | Action |
-   |------|---------|--------|
-   | CO | Checked out | Ready — no action needed |
-   | AD | Added (already `cm add`ed) | Ready — no action needed |
-   | CH | Changed without checkout | Run `cm partial checkout "{file}"` |
-   | PR | Private (untracked) | Run `cm add "{file}"` |
+1. **CH files:** `cm partial checkout "{file}"`
+2. **PR files:**
+   - If inside a new PR directory, `cm add` the directory first.
+   - Then `cm add "{file}"`
+3. Summary: "전처리 완료: CH {n}개 checkout, PR {n}개 add"
+4. On pre-processing failure → show error, ask how to proceed.
 
-3. **Process CH files** — For each CH file, run:
-   ```
-   cm partial checkout "{file}"
-   ```
+### Step 7 — Compile error check
 
-4. **Process PR files** — For each PR file:
-   - If the file is inside a new directory that is also PR, `cm add` the directory first.
-   - Then run:
-     ```
-     cm add "{file}"
-     ```
-
-5. Show a brief summary: "전처리 완료: CH {n}개 checkout, PR {n}개 add"
-
-6. If any pre-processing command fails, show the error and ask the user how to proceed.
-
-### Step 7: Compile error check
-
-Before executing checkin, verify that the Unity project compiles without errors.
-
-1. Check Unity is running:
+1. Unity running?
    ```bash
    ls -la "{PROJECT_PATH}/Temp/UnityLockfile" 2>/dev/null && echo "UNITY_RUNNING" || echo "UNITY_NOT_RUNNING"
    ```
-   - If `UNITY_NOT_RUNNING` → skip this step (cannot verify).
+   If `UNITY_NOT_RUNNING` → skip this step.
 
-2. Check current compile status:
+2. Current status:
    ```bash
    tail -100 "$APPDATA/../Local/Unity/Editor/Editor.log" 2>/dev/null | grep -i "error CS\|Reloading assemblies after finishing script compilation"
    ```
 
 3. **Interpretation:**
-   - If `Reloading assemblies after finishing script compilation` appears AFTER the last `error CS` line (or no `error CS` exists) → proceed to Step 8.
-   - If `error CS` lines appear AFTER the last `Reloading assemblies` line → **active compile errors exist**.
+   - `Reloading assemblies` AFTER last `error CS` (or no errors) → proceed to Step 8.
+   - `error CS` AFTER last `Reloading assemblies` → **active errors**.
 
 4. **On active errors:**
-   - List unique errors (deduplicated).
-   - Ask: "컴파일 에러가 있습니다. 그래도 체크인을 진행할까요?"
-   - If the user declines → stop. If the user confirms → proceed to Step 8.
+   - List deduplicated unique errors.
+   - Ask: "컴파일 에러가 있음. 그래도 체크인 진행?"
+   - Decline → stop. Confirm → Step 8.
 
-### Step 8: Execute checkin
+### Step 8 — Execute checkin
 
-Once prepared, **explicitly specify all files** to guarantee inclusion regardless of PlasticSCM GUI check state:
+**Always explicitly list all files** — guarantees inclusion regardless of GUI check state:
 ```
 cm checkin "{file1}" "{file2}" ... -c="{comment}"
 ```
 
-- Include both primary and ancillary files in the file list.
-- Quote each file path to handle spaces.
-- If the total file count exceeds 30, split into batches to avoid command line length limits. Use the same comment for all batches.
+- Include both primary and ancillary.
+- Quote each path (handles spaces).
+- If >30 files, split into batches with the same comment.
 
-**Important:** Do NOT use bare `cm checkin -c="{comment}"` without file arguments — this only commits "checked" files in PlasticSCM, which may silently skip primary changes that were unchecked in the GUI.
+**CRITICAL:** Do NOT run bare `cm checkin -c="{comment}"` without file args — it commits only "checked" files in the GUI, silently skipping unchecked primary changes.
 
-### Step 9: Verify
+### Step 9 — Verify
 
-Show the resulting changeset info to confirm success:
 ```
 cm find changeset "where changesetid = (SELECT cs.changesetid FROM workspace)" --format="{changesetid}|{date}|{comment}" --nototal
 ```
 
-Do not use any other tools. Do not send any other text or messages besides these tool calls.
+Show resulting changeset info to confirm success.
+
+Use only the tools listed above.

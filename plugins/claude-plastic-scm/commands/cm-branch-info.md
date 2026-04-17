@@ -1,51 +1,42 @@
 ---
-allowed-tools: Bash(cm find:*), Bash(cm wi:*), Bash(cm branch:*)
-description: Show branch info, changesets, and merge history (브랜치 정보 조회)
+allowed-tools:
+  - Bash(cm find:*)
+  - Bash(cm wi:*)
+  - Bash(cm branch:*)
+description: Show PlasticSCM branch info — changesets, child branches, incoming/outgoing merge history. Use for "브랜치 정보", "branch info", "merge history".
 argument-hint: "[branch-path]"
 ---
 
 ## Context
 
-- Workspace info: !`cm wi 2>/dev/null`
+- Workspace info: !`cm wi 2>/dev/null || echo "NOT_A_WORKSPACE"`
 
-## Your task
+## Task
 
-Display a comprehensive overview of the target branch.
+Display an overview of the target branch.
 
-### Arguments
+### Step 0 — Workspace guard
 
-- If `$ARGUMENTS` contains a branch path, use that branch.
-- If empty, parse the current branch from the workspace info above.
+If context contains `NOT_A_WORKSPACE` or is empty, stop:
+- PlasticSCM workspace가 아님 — 브랜치 조회 불가.
 
-### Steps
+### Step 1 — Resolve branch
 
-1. **Current branch and changeset info:**
-   ```
-   cm find changeset "where branch='{branch}'" --format="{changesetid}|{date}|{owner}|{comment}" --nototal
-   ```
-   Show the most recent changeset details.
+- If `$ARGUMENTS` is a branch path, use it.
+- Otherwise parse current branch from workspace info.
 
+### Step 2 — Queries
+
+1. **Latest changeset details:**
+   `cm find changeset "where branch='{branch}'" --format="{changesetid}|{date}|{owner}|{comment}" --nototal`
 2. **Child branches:**
-   ```
-   cm find branch "where parent='{branch}'" --format="{name}" --nototal
-   ```
-   List child branches (if any).
+   `cm find branch "where parent='{branch}'" --format="{name}" --nototal`
+3. **Recent 10 changesets** — format as table: `CS# | Date | Owner | Comment`.
+4. **Incoming merges (last 10):**
+   `cm find merge "where dstbranch='{branch}'" --format="{dstchangeset}|{srcchangeset}|{srcbranch}|{srccomment}" --nototal`
+5. **Outgoing merges (last 10):**
+   `cm find merge "where srcbranch='{branch}'" --format="{dstchangeset}|{dstbranch}|{srcchangeset}|{srccomment}" --nototal`
 
-3. **Recent changesets** (last 10):
-   Display as a formatted table with columns: CS#, Date, Owner, Comment.
+### Step 3 — Present
 
-4. **Merge history — Incoming** (merged INTO this branch):
-   ```
-   cm find merge "where dstbranch='{branch}'" --format="{dstchangeset}|{srcchangeset}|{srcbranch}|{srccomment}" --nototal
-   ```
-   Show the last 10 incoming merges.
-
-5. **Merge history — Outgoing** (merged FROM this branch):
-   ```
-   cm find merge "where srcbranch='{branch}'" --format="{dstchangeset}|{dstbranch}|{srcchangeset}|{srccomment}" --nototal
-   ```
-   Show the last 10 outgoing merges.
-
-Present everything in a clean, readable format with clear section headers.
-
-Do not use any other tools. Do not send any other text or messages besides these tool calls.
+Clean sections with clear headers. Use only the tools listed above.
