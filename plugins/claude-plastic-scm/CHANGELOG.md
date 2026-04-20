@@ -3,9 +3,37 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
-## [1.11.0-alpha] - 2026-04-20
+## [1.11.0] - 2026-04-20
 
-### 추가
+(promoted from alpha after pilot: issue #1 처리 end-to-end 성공. 4-gate 전부 통과. 파일럿 중 발견한 3건 설계 결함은 #2/#3/#4로 등록 — 하나는 즉시 패치(Phase C issue type matrix, 커밋 `6cc13fa`), 나머지는 다음 /cm-lint 세션에서 자기참조 개선)
+
+### 추가 (v1.11.0-alpha에서)
+
+- **`/cm-lint` 슬래시 커맨드** — plastic-scm 스킬 전용 gotcha 진단+수리. 4-phase 워크플로우: GitHub Issues(`skill:plastic-scm` 필터)에서 gotcha-open/hold 수집 → 타이틀 유사도 클러스터링 → 유저 triage(accept/hold/reject) → worktree에서 4-gate 검증(baseline 재현 / primary fix 검증 / regression 2종) → 통과 시 commit+close, 실패 시 worktree 폐기+lint-attempted 라벨.
+- `skills/plastic-scm/templates/gotcha-template.md` — 이슈 body 필수 필드(증상, 재현 단계, 시도, 해결/가설, 1줄 개선안, 영향 범위) + 라벨 스키마(`skill:plastic-scm` + `gotcha-open/hold/accepted/rejected`) + hold 카운터 규약(`lint-hold: bump (now N)` 코멘트).
+- `skills/plastic-scm/templates/regression-smoke.md` — lint Phase C 회귀 검증용 smoke test 4개(SM-01 단순 checkin, SM-02 폴더+CH/PR 혼재, SM-03 label with -c=, SM-04 merge_investigate.sh). 프로젝트 비특화, 일반 cm 플로우만.
+- `docs/plans/2026-04-20-gotcha-lint-system.md` — 이번 릴리스의 설계+구현 플랜(Phase 1+2). Phase 3(hook 기반 auto-capture)는 별도 플랜.
+
+### 추가 (stable promotion에서)
+
+- `references/cm-commands.md` checkin 섹션에 "⚠️ CH Hash-Equal Trap" 추가 — 파일럿 이슈 #1의 fix. atomic checkin이 touched-but-hash-equal 파일로 전체 롤백되는 trap과 `cm undo` / `cm co` 복구 패턴 문서화.
+- `commands/cm-lint.md` Phase C.0 "Classify issue type" — 파일럿 중 발견한 결함 #3 즉시 패치. runtime/doc/process 3가지 issue type별 baseline/regression 전략 표 추가. 이전엔 runtime 버그만 다뤘음.
+
+### 설계 결정 (locked)
+
+- Reflection 트리거: **C+Hook hybrid**(Phase 3 예정)
+- Hold 카운터: comment 누적(`lint-hold: bump`)
+- 검증: 수동 재현 + script 자동 + 회귀 2종(smoke 세트에서 선정)
+- 승격: 항상 수동, hold 카운터는 정렬 가중치 only
+- 원칙: "잘못된 업데이트 > 업데이트 없음" — 4-gate 전부 통과해야 fix land
+
+### 알려진 한계 (open gotcha issues)
+
+- #2 — label bootstrap 누락 (최초 실행 시 수동 생성 필요)
+- #3 — Git Bash MSYS가 gh 커맨드 인자의 `/cm-*` 토큰을 Windows 경로로 변환 (`MSYS_NO_PATHCONV=1` 가드 필요)
+- #4 — Phase B/C에 gotcha-open → gotcha-accepted 라벨 전환 명령 누락
+
+
 - **`/cm-lint` 슬래시 커맨드** — plastic-scm 스킬 전용 gotcha 진단+수리. 4-phase 워크플로우: GitHub Issues(`skill:plastic-scm` 필터)에서 gotcha-open/hold 수집 → 타이틀 유사도 클러스터링 → 유저 triage(accept/hold/reject) → worktree에서 4-gate 검증(baseline 재현 / primary fix 검증 / regression 2종) → 통과 시 commit+close, 실패 시 worktree 폐기+lint-attempted 라벨.
 - `skills/plastic-scm/templates/gotcha-template.md` — 이슈 body 필수 필드(증상, 재현 단계, 시도, 해결/가설, 1줄 개선안, 영향 범위) + 라벨 스키마(`skill:plastic-scm` + `gotcha-open/hold/accepted/rejected`) + hold 카운터 규약(`lint-hold: bump (now N)` 코멘트).
 - `skills/plastic-scm/templates/regression-smoke.md` — lint Phase C 회귀 검증용 smoke test 4개(SM-01 단순 checkin, SM-02 폴더+CH/PR 혼재, SM-03 label with -c=, SM-04 merge_investigate.sh). 프로젝트 비특화, 일반 cm 플로우만.
