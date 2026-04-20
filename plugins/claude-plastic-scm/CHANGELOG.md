@@ -3,6 +3,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.13.2] - 2026-04-20
+
+### 변경
+- Hook debug log path: `$HOME/.cm-hook-last.json` → `/tmp/cm-hook-last.json`. 시스템 temp는 재부팅 시 자동 정리 + cloud sync 대상 제외라 민감 정보 persistence 우려 해소. 즉시 review 용도만.
+
 ## [1.13.1] - 2026-04-20
 
 ### 수정 — 1.13.0의 hook이 발화해도 질문 안 나온 버그

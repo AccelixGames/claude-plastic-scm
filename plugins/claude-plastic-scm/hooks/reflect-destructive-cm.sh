@@ -18,8 +18,9 @@
 # block cm commands retroactively.
 #
 # Debug: the raw stdin JSON is always written (overwrite) to
-# "$HOME/.cm-hook-last.json". Use this to diagnose whether the hook fires
-# and to inspect Claude Code's actual input shape.
+# "/tmp/cm-hook-last.json". Use this to diagnose whether the hook fires
+# and to inspect Claude Code's actual input shape. System /tmp is cleared
+# on reboot (no persistence) and not synced by cloud backup services.
 
 set -u
 
@@ -33,9 +34,9 @@ fi
 input=$(cat)
 
 # Debug log: overwrite each invocation so the file always reflects the latest
-# hook firing. Enables `ls "$HOME/.cm-hook-last.json"` + timestamp check to
+# hook firing. Enables `ls /tmp/cm-hook-last.json` + timestamp check to
 # verify the hook fired, and `cat` to inspect the actual tool_response shape.
-debug_log="${HOME:-/tmp}/.cm-hook-last.json"
+debug_log="/tmp/cm-hook-last.json"
 printf '%s\n' "$input" > "$debug_log" 2>/dev/null || true
 
 # Extract fields
