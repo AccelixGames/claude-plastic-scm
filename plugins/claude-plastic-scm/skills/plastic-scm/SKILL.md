@@ -219,6 +219,7 @@ This plugin also provides slash commands for common workflows:
 | `/cm-compile-check` | Check Unity compile errors |
 | `/cm-hidden` | View and manage hidden changes and ignore patterns |
 | `/cm-diff` | Compare changesets/branches/labels |
+| `/cm-lint` | Skill auto-diagnosis + repair — triage `skill:plastic-scm` issues, fix with 4-gate verification |
 
 ## Troubleshooting
 
