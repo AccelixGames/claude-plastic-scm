@@ -13,3 +13,6 @@ desktop.ini
 # Others
 .superpowers/
 .superpowers
+
+# Git worktrees
+.worktrees/
