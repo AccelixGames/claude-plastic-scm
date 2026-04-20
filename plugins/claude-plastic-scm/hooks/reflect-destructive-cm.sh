@@ -3,12 +3,23 @@
 #
 # Input (stdin): Claude Code PostToolUse hook JSON.
 # Behavior: if the just-run Bash command matches `cm (checkin|merge|label)` and
-# exit code was 0, emit a hookSpecificOutput.additionalContext JSON on stdout
-# instructing Claude to follow the SKILL.md "Post-task Reflection" protocol.
-# Otherwise: silently exit 0 (no output = no injection).
+# the tool succeeded, emit a hookSpecificOutput.additionalContext JSON on
+# stdout instructing Claude to follow the SKILL.md "Post-task Reflection"
+# protocol. Otherwise: silently exit 0 (no output = no injection).
+#
+# Success detection: Claude Code's Bash tool_response schema is not fully
+# documented publicly. We use a defensive OR of common success signals:
+#   - tool_response.is_error == false (Claude Code's canonical error flag)
+#   - tool_response.success == true (Write-tool style)
+# If neither field is present, we assume success (the hook fired, so the
+# tool completed). Only `is_error == true` is treated as an explicit failure.
 #
 # Exit codes: always 0 unless jq is missing. Never exit 2 — we do not want to
 # block cm commands retroactively.
+#
+# Debug: the raw stdin JSON is always written (overwrite) to
+# "$HOME/.cm-hook-last.json". Use this to diagnose whether the hook fires
+# and to inspect Claude Code's actual input shape.
 
 set -u
 
@@ -21,10 +32,17 @@ fi
 # Read entire stdin
 input=$(cat)
 
+# Debug log: overwrite each invocation so the file always reflects the latest
+# hook firing. Enables `ls "$HOME/.cm-hook-last.json"` + timestamp check to
+# verify the hook fired, and `cat` to inspect the actual tool_response shape.
+debug_log="${HOME:-/tmp}/.cm-hook-last.json"
+printf '%s\n' "$input" > "$debug_log" 2>/dev/null || true
+
 # Extract fields
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // empty')
 command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
-exit_code=$(printf '%s' "$input" | jq -r '.tool_response.exit_code // .exit_code // empty')
+is_error=$(printf '%s' "$input" | jq -r '.tool_response.is_error // empty')
+success=$(printf '%s' "$input" | jq -r '.tool_response.success // empty')
 
 # Gate 1: Must be a Bash tool use
 [ "$tool_name" = "Bash" ] || exit 0
@@ -37,9 +55,12 @@ if ! printf '%s' "$command" | grep -Eq '(^|[[:space:];|&])cm[[:space:]]+(checkin
   exit 0
 fi
 
-# Gate 3: Exit code must be 0 (success). Missing exit_code counted as failure
-# to be safe — hooks shouldn't fire on ambiguous outcomes.
-[ "$exit_code" = "0" ] || exit 0
+# Gate 3: Tool must have succeeded.
+# Only treat is_error=="true" or success=="false" as explicit failure.
+# Everything else (including missing fields) → proceed.
+if [ "$is_error" = "true" ] || [ "$success" = "false" ]; then
+  exit 0
+fi
 
 # All gates passed — emit additionalContext for Claude.
 jq -n '{

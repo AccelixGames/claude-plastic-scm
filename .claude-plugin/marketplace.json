@@ -10,7 +10,7 @@
     {
       "name": "claude-plastic-scm",
       "description": "PlasticSCM (Unity Version Control) workflow automation — checkin, merge comments, branch info, status, history, diff",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "author": {
         "name": "AccelixGames",
         "email": "accelix.staff@gmail.com"

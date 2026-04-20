@@ -3,6 +3,18 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.13.1] - 2026-04-20
+
+### 수정 — 1.13.0의 hook이 발화해도 질문 안 나온 버그
+
+- **Gate 3 성공 판정 교체**: `exit_code == 0` 기반 체크를 `is_error != "true"` 기반으로 교체. 공식 문서 상 Bash tool의 `tool_response` schema에 `exit_code` 필드가 문서화돼 있지 않음 (`is_error: false`가 Claude Code의 canonical 성공 신호). 기존 체크는 필드 부재로 매번 실패 → hook이 stdin 파싱은 하지만 항상 Gate 3에서 silent exit했음.
+- **Defensive fallback**: `is_error`, `success` 필드 둘 다 참조. 명시적 실패(`is_error: true` 또는 `success: false`)만 skip, 외 모든 경우는 성공으로 간주 (hook 발화 = tool 완료 가정).
+- **Debug 로그 추가**: 매 호출 시 stdin JSON 전체를 `$HOME/.cm-hook-last.json`에 덮어쓰기. 유저가 `ls ~/.cm-hook-last.json`로 hook 실제 발화 여부 + `cat`으로 Claude Code의 실제 tool_response shape 검증 가능.
+
+### 검증
+
+- Dry-run 5건 통과: `is_error:false` → 발화, `is_error:true` → silent, 구 `exit_code:0` schema → 여전히 발화(backward compat), tool_response 부재 → 발화, `cm status` → silent.
+
 ## [1.13.0] - 2026-04-20
 
 ### 추가 — Phase 3: Hook 기반 auto-capture + Post-task Reflection 프로토콜
