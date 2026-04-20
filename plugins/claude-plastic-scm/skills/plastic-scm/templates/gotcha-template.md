@@ -5,17 +5,21 @@ description: GitHub issue body template for plastic-scm gotchas captured via /cm
 
 # Gotcha Issue Template
 
-## Labels (MUST include both base + one state)
+## Labels (single label)
 
 | Label | Purpose |
 |-------|---------|
 | `skill:plastic-scm` | Filter from other plugins in shared marketplace repo. **Required on every gotcha.** |
-| `gotcha-open` | Fresh capture, awaiting triage |
-| `gotcha-hold` | User chose to hold (need more occurrences before deciding) |
-| `gotcha-accepted` | Triaged for fix. Closed when fix lands. |
-| `gotcha-rejected` | Triaged and dismissed (with reason comment). Closed. |
 
-Exactly one `gotcha-*` state label per issue.
+State는 라벨이 아니라 **issue open/closed + 코멘트 패턴**으로 추적:
+
+| State | 판정 조건 |
+|-------|-----------|
+| `new` | open + `lint-hold: bump` 코멘트 0건 |
+| `held` | open + `lint-hold: bump` 코멘트 ≥ 1건 |
+| `rejected` | closed + `lint-reject:` 코멘트 존재 |
+| `landed` | closed + `Fixed in <sha> via /cm-lint` 코멘트 존재 |
+| `attempted` | open + `lint-attempted:` 코멘트 존재 (gate 실패, 재시도 대기) |
 
 ## Title
 
@@ -81,4 +85,4 @@ When the user chooses "hold" during lint Phase B, lint appends a comment:
 lint-hold: bump (now N)
 ```
 
-where N = previous hold count + 1. Lint Phase A aggregates these by counting comments matching `^lint-hold: bump` per issue. Counter is **sort-weight only**; promotion to `gotcha-accepted` is always manual.
+where N = previous hold count + 1. Lint Phase A aggregates these by counting comments matching `^lint-hold: bump` per issue. Counter is **sort-weight only**; accept/land 결정은 항상 유저 수동 triage.

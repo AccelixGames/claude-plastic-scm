@@ -3,6 +3,31 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.12.0] - 2026-04-20
+
+첫 `/cm-lint` 실전 세션 (3 clusters docs overhaul). gotcha 이슈 #2/#3/#4 일괄 처리. 4-gate 전부 통과.
+
+### 변경 (backward-incompatible state 추적 모델)
+
+- **`/cm-lint` 라벨 스키마 단순화**: `gotcha-open` / `gotcha-hold` / `gotcha-accepted` / `gotcha-rejected` / `lint-attempted` 5종 상태 라벨 제거. `skill:plastic-scm` 단일 라벨만 유지. State는 issue open/closed + 코멘트 패턴(`lint-hold:` / `lint-reject:` / `lint-attempted:` / `Fixed in <sha>`)으로 추적. (closes #4)
+- `/cm-lint --state` 플래그 재정의: `gotcha-open` / `gotcha-hold` → `new` (bump 0) / `held` (bump ≥ 1).
+
+### 추가
+
+- **`/cm-lint` Step 0.5 — Label bootstrap**: `skill:plastic-scm` 라벨이 없으면 idempotent 생성. 신규 marketplace repo나 라벨 정리 직후에도 `gh issue create` 실패 없이 /cm-lint 최초 실행 가능. (closes #2)
+- **`/cm-lint` Environment note — Git Bash (MSYS)**: 모든 `gh` 호출에 `MSYS_NO_PATHCONV=1` 가드 prefix 공식화. Windows Git Bash에서 `/cm-*` 같은 slash-prefix 토큰이 Windows 경로로 자동 변환되던 함정 방지. Linux/macOS에서는 무해. (closes #3)
+
+### 수정
+
+- `gotcha-template.md` Labels 섹션: 단일 라벨 스키마 + state 판정 표(open/closed + 코멘트 패턴) 반영.
+- `docs/plans/2026-04-20-gotcha-lint-system.md`: 라벨 스키마 변경을 plan 문서 전반에 반영(Task 2/3/4/5/6/9/10 블록). 과거 1.11.0 릴리스 기록은 CHANGELOG convention에 따라 보존.
+
+### 해결된 gotcha 이슈
+
+- **#2** — label bootstrap 누락 → Step 0.5 추가
+- **#3** — Git Bash MSYS path-converts slash-prefix tokens in gh args → Environment note + 전 gh 블록 가드
+- **#4** — Phase B/C에 gotcha-open → gotcha-accepted 라벨 전환 명령 누락 → 라벨 스키마 단순화로 자동 해결
+
 ## [1.11.0] - 2026-04-20
 
 (promoted from alpha after pilot: issue #1 처리 end-to-end 성공. 4-gate 전부 통과. 파일럿 중 발견한 3건 설계 결함은 #2/#3/#4로 등록 — 하나는 즉시 패치(Phase C issue type matrix, 커밋 `6cc13fa`), 나머지는 다음 /cm-lint 세션에서 자기참조 개선)
