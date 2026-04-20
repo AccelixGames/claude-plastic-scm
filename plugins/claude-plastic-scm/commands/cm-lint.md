@@ -1,10 +1,10 @@
 ---
 name: cm-lint
 description: >
-  PlasticSCM skill 자동 진단 + 수리. GitHub Issues에 수집된 gotcha-open /
-  gotcha-hold 이슈를 수집 → 클러스터링 → 유저와 해결책 협의 → worktree 격리
-  수정 → baseline + 회귀 2종 검증 → 닫기. 기존 accelix-ai-plugins marketplace
-  repo에 `skill:plastic-scm` 라벨로 필터링.
+  PlasticSCM skill 자동 진단 + 수리. GitHub Issues에 수집된 open 이슈를
+  bump-counter로 new/held 구분 → 클러스터링 → 유저와 해결책 협의 → worktree
+  격리 수정 → baseline + 회귀 2종 검증 → 닫기. 기존 accelix-ai-plugins
+  marketplace repo에 `skill:plastic-scm` 라벨로 필터링.
 triggers:
   - /cm-lint
   - cm lint
@@ -34,7 +34,17 @@ disable-model-invocation: true
 
 - `/cm-lint` — 대화형 (전체 논의 → 수정)
 - `/cm-lint --report-only` — 리포트만, 수정 X
-- `/cm-lint --state <label>` — 특정 state 라벨만 (`gotcha-open`, `gotcha-hold`)
+- `/cm-lint --state <new|held>` — bump-counter 기반 필터링 (new = bump 0, held = bump ≥ 1)
+
+## Environment note — Git Bash (MSYS)
+
+Windows Git Bash 환경에서는 `gh` 커맨드 인자에 포함된 `/<slash-prefix>` 토큰이 자동으로 Windows 경로(예: `C:/Program Files/Git/...`)로 변환됨. `/cm-lint` 본문/코멘트에 `/cm-*` 같은 토큰이 들어가면 망가짐. 모든 `gh` 호출은 `MSYS_NO_PATHCONV=1` 가드를 prefix로 사용.
+
+```bash
+MSYS_NO_PATHCONV=1 gh issue ...   # 모든 gh 호출 공통
+```
+
+가드는 Linux/macOS에서도 무해 (변수 무시됨).
 
 ## Step 0 — Workspace guard
 
@@ -44,12 +54,27 @@ disable-model-invocation: true
 
 Must be run from the `accelix-ai-plugins` marketplace repo root. Abort if not.
 
+## Step 0.5 — Label bootstrap
+
+`skill:plastic-scm` 라벨이 없으면 생성. idempotent — 이미 있으면 no-op. (State 추적은 issue open/closed + comment 패턴으로 하므로 이 라벨 하나만 관리하면 됨.)
+
+```bash
+MSYS_NO_PATHCONV=1 gh label list \
+  --repo AccelixGames/accelix-ai-plugins \
+  --limit 200 \
+  --json name | jq -r '.[].name' | grep -qx 'skill:plastic-scm' \
+  || MSYS_NO_PATHCONV=1 gh label create 'skill:plastic-scm' \
+       --repo AccelixGames/accelix-ai-plugins \
+       --color '5319E7' \
+       --description 'Filter: this issue targets the plastic-scm skill'
+```
+
 ## Phase A — Collect + Cluster + Report
 
 ### Step A.1: Collect
 
 ```bash
-gh issue list \
+MSYS_NO_PATHCONV=1 gh issue list \
   --repo AccelixGames/accelix-ai-plugins \
   --label skill:plastic-scm \
   --state open \
@@ -96,9 +121,9 @@ Print to user:
 === /cm-lint — Phase A Report ===
 Fetched: N issues (M clusters)
 Breakdown by state:
-  gotcha-open:     X
-  gotcha-hold:     Y   (total bump count: Z)
-  gotcha-rejected: (filtered, closed issues excluded)
+  New  (bump 0):       X
+  Held (bump ≥ 1):     Y   (total bump count: Z)
+  (rejected / landed 이슈는 closed — Phase A.1 --state open 필터로 자동 제외)
 
 Top clusters (severity desc):
   1. [severity 7] [cm checkin] atomic fail on hash-equal touched files
@@ -140,13 +165,14 @@ Decision: [A]ccept / [H]old / [R]eject / [S]kip (defer to next /cm-lint)
 - Record agreed approach in `fix_plan[cluster_id].approach`.
 
 **H — Hold:**
-- For each member issue: `gh issue comment <N> --body "lint-hold: bump (now $((prev+1)))"`.
-- Ensure label = `gotcha-hold` (switch from `gotcha-open` if needed): `gh issue edit <N> --remove-label gotcha-open --add-label gotcha-hold`.
+- For each member issue: `MSYS_NO_PATHCONV=1 gh issue comment <N> --body "lint-hold: bump (now $((prev+1)))"`.
+- Issue는 open 유지. Held state는 `lint-hold: bump` 코멘트 존재(bump ≥ 1)로 판정.
 - Move to next cluster.
 
 **R — Reject:**
 - Prompt user for rejection reason (1-line).
-- For each member: `gh issue comment <N> --body "lint-reject: <reason>"`, then `gh issue edit <N> --remove-label gotcha-open,gotcha-hold --add-label gotcha-rejected`, then `gh issue close <N>`.
+- For each member: `MSYS_NO_PATHCONV=1 gh issue comment <N> --body "lint-reject: <reason>"` → `MSYS_NO_PATHCONV=1 gh issue close <N>`.
+- Rejected state는 closed + `lint-reject:` 코멘트 존재로 판정.
 - Move to next cluster.
 
 **S — Skip:**
@@ -298,9 +324,9 @@ cd <marketplace-repo-main>
 git merge --no-ff "cm-lint/cluster-${cluster_id}" -m "merge cm-lint cluster ${cluster_id}"
 git worktree remove "$WT"
 git branch -d "cm-lint/cluster-${cluster_id}"
-# close all member issues
+# close all member issues. Landed state는 closed + "Fixed in <sha>" 코멘트로 판정.
 for n in $member_issues; do
-  gh issue close $n --comment "Fixed in ${commit_sha} via /cm-lint"
+  MSYS_NO_PATHCONV=1 gh issue close $n --comment "Fixed in ${commit_sha} via /cm-lint"
 done
 ```
 
@@ -310,10 +336,9 @@ done
 # Discard per using-git-worktrees skill guidance
 git worktree remove --force "$WT"
 git branch -D "cm-lint/cluster-${cluster_id}"
-# comment on all member issues with gate failure summary
+# Issue는 open 유지 (재시도 가능). Attempted state는 `lint-attempted:` 코멘트로 판정.
 for n in $member_issues; do
-  gh issue comment $n --body "lint-attempted: <gate-failure-summary>"
-  gh issue edit $n --add-label lint-attempted
+  MSYS_NO_PATHCONV=1 gh issue comment $n --body "lint-attempted: <gate-failure-summary>"
 done
 ```
 
@@ -328,7 +353,7 @@ Clusters processed: N
   Held (bump added, deferred):         H
   Rejected (closed):                   R
   Skipped (deferred to next lint):     S
-  Attempted but gate-failed:           F (lint-attempted label added)
+  Attempted but gate-failed:           F (lint-attempted: comment added, issue open 유지)
 
 Verification gates (on fixed clusters):
   Total subagent dispatches:   X*4 = <n>
@@ -353,5 +378,5 @@ Landed commits:
 
 - **"NOT_A_MARKETPLACE_REPO"** — run from `accelix-ai-plugins` repo root.
 - **`gh` auth error** — run `gh auth status`; re-login if needed.
-- **Clustering produces single mega-cluster** — symptom tokenization too lenient. Manual split via `/cm-lint --state gotcha-open` on specific labels.
+- **Clustering produces single mega-cluster** — symptom tokenization too lenient. Manual split via `/cm-lint --state new` to narrow to fresh captures only.
 - **Regression baseline fails on main** — indicates pre-existing issue unrelated to this fix. Log to user, skip regression gate for this cluster (with explicit user approval), continue.

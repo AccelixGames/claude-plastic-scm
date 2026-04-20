@@ -190,17 +190,21 @@ description: GitHub issue body template for plastic-scm gotchas captured via /cm
 
 # Gotcha Issue Template
 
-## Labels (MUST include both base + one state)
+## Labels (single label)
 
 | Label | Purpose |
 |-------|---------|
 | `skill:plastic-scm` | Filter from other plugins in shared marketplace repo. **Required on every gotcha.** |
-| `gotcha-open` | Fresh capture, awaiting triage |
-| `gotcha-hold` | User chose to hold (need more occurrences before deciding) |
-| `gotcha-accepted` | Triaged for fix. Closed when fix lands. |
-| `gotcha-rejected` | Triaged and dismissed (with reason comment). Closed. |
 
-Exactly one `gotcha-*` state label per issue.
+State는 라벨이 아니라 **issue open/closed + 코멘트 패턴**으로 추적:
+
+| State | 판정 조건 |
+|-------|-----------|
+| `new` | open + `lint-hold: bump` 코멘트 0건 |
+| `held` | open + `lint-hold: bump` 코멘트 ≥ 1건 |
+| `rejected` | closed + `lint-reject:` 코멘트 존재 |
+| `landed` | closed + `Fixed in <sha> via /cm-lint` 코멘트 존재 |
+| `attempted` | open + `lint-attempted:` 코멘트 존재 (gate 실패, 재시도 대기) |
 
 ## Title
 
@@ -266,7 +270,7 @@ When the user chooses "hold" during lint Phase B, lint appends a comment:
 lint-hold: bump (now N)
 ```
 
-where N = previous hold count + 1. Lint Phase A aggregates these by counting comments matching `^lint-hold: bump` per issue. Counter is **sort-weight only**; promotion to `gotcha-accepted` is always manual.
+where N = previous hold count + 1. Lint Phase A aggregates these by counting comments matching `^lint-hold: bump` per issue. Counter is **sort-weight only**; accept/land 결정은 항상 유저 수동 triage.
 ```
 
 - [ ] **Step 2: Verify file exists**
@@ -283,9 +287,10 @@ feat(claude-plastic-scm): add gotcha issue template for /cm-lint
 
 Required body fields: 증상, 재현 단계, 시도, 해결/가설, 1줄 개선안, 영향 범위.
 재현 단계 is mandatory because lint Phase C uses it for baseline + post-fix
-subagent verification. Label schema: skill:plastic-scm + one of
-gotcha-open/hold/accepted/rejected. Hold counter convention: lint-hold
-comments accumulated, counted at lint Phase A as sort weight only.
+subagent verification. Label schema: skill:plastic-scm only; state tracked
+via issue open/closed + comment patterns (lint-hold:/lint-reject:/lint-attempted:).
+Hold counter convention: lint-hold comments accumulated, counted at lint
+Phase A as sort weight only.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -309,10 +314,10 @@ Create `plugins/claude-plastic-scm/commands/cm-lint.md` with:
 ---
 name: cm-lint
 description: >
-  PlasticSCM skill 자동 진단 + 수리. GitHub Issues에 수집된 gotcha-open /
-  gotcha-hold 이슈를 수집 → 클러스터링 → 유저와 해결책 협의 → worktree 격리
-  수정 → baseline + 회귀 2종 검증 → 닫기. 기존 accelix-ai-plugins marketplace
-  repo에 `skill:plastic-scm` 라벨로 필터링.
+  PlasticSCM skill 자동 진단 + 수리. GitHub Issues에 수집된 open 이슈를
+  bump-counter로 new/held 구분 → 클러스터링 → 유저와 해결책 협의 → worktree
+  격리 수정 → baseline + 회귀 2종 검증 → 닫기. 기존 accelix-ai-plugins
+  marketplace repo에 `skill:plastic-scm` 라벨로 필터링.
 triggers:
   - /cm-lint
   - cm lint
@@ -342,7 +347,11 @@ disable-model-invocation: true
 
 - `/cm-lint` — 대화형 (전체 논의 → 수정)
 - `/cm-lint --report-only` — 리포트만, 수정 X
-- `/cm-lint --state <label>` — 특정 state 라벨만 (`gotcha-open`, `gotcha-hold`)
+- `/cm-lint --state <new|held>` — bump-counter 기반 필터링 (new = bump 0, held = bump ≥ 1)
+
+## Environment note — Git Bash (MSYS)
+
+Windows Git Bash 환경에서는 `gh` 커맨드 인자에 포함된 `/<slash-prefix>` 토큰이 자동으로 Windows 경로로 변환됨. 모든 `gh` 호출은 `MSYS_NO_PATHCONV=1` 가드를 prefix로 사용. Linux/macOS에서는 변수 무시됨 (무해).
 
 ## Step 0 — Workspace guard
 
@@ -352,12 +361,27 @@ disable-model-invocation: true
 
 Must be run from the `accelix-ai-plugins` marketplace repo root. Abort if not.
 
+## Step 0.5 — Label bootstrap
+
+`skill:plastic-scm` 라벨이 없으면 생성. idempotent.
+
+```bash
+MSYS_NO_PATHCONV=1 gh label list \
+  --repo AccelixGames/accelix-ai-plugins \
+  --limit 200 \
+  --json name | jq -r '.[].name' | grep -qx 'skill:plastic-scm' \
+  || MSYS_NO_PATHCONV=1 gh label create 'skill:plastic-scm' \
+       --repo AccelixGames/accelix-ai-plugins \
+       --color '5319E7' \
+       --description 'Filter: this issue targets the plastic-scm skill'
+```
+
 ## Phase A — Collect + Cluster + Report
 
 ### Step A.1: Collect
 
 ```bash
-gh issue list \
+MSYS_NO_PATHCONV=1 gh issue list \
   --repo AccelixGames/accelix-ai-plugins \
   --label skill:plastic-scm \
   --state open \
@@ -404,9 +428,9 @@ Print to user:
 === /cm-lint — Phase A Report ===
 Fetched: N issues (M clusters)
 Breakdown by state:
-  gotcha-open:     X
-  gotcha-hold:     Y   (total bump count: Z)
-  gotcha-rejected: (filtered, closed issues excluded)
+  New  (bump 0):       X
+  Held (bump ≥ 1):     Y   (total bump count: Z)
+  (rejected / landed 이슈는 closed — Phase A.1 --state open 필터로 자동 제외)
 
 Top clusters (severity desc):
   1. [severity 7] [cm checkin] atomic fail on hash-equal touched files
@@ -469,13 +493,14 @@ Decision: [A]ccept / [H]old / [R]eject / [S]kip (defer to next /cm-lint)
 - Record agreed approach in `fix_plan[cluster_id].approach`.
 
 **H — Hold:**
-- For each member issue: `gh issue comment <N> --body "lint-hold: bump (now $((prev+1)))"`.
-- Ensure label = `gotcha-hold` (switch from `gotcha-open` if needed): `gh issue edit <N> --remove-label gotcha-open --add-label gotcha-hold`.
+- For each member issue: `MSYS_NO_PATHCONV=1 gh issue comment <N> --body "lint-hold: bump (now $((prev+1)))"`.
+- Issue는 open 유지. Held state는 `lint-hold: bump` 코멘트 존재(bump ≥ 1)로 판정.
 - Move to next cluster.
 
 **R — Reject:**
 - Prompt user for rejection reason (1-line).
-- For each member: `gh issue comment <N> --body "lint-reject: <reason>"`, then `gh issue edit <N> --remove-label gotcha-open,gotcha-hold --add-label gotcha-rejected`, then `gh issue close <N>`.
+- For each member: `MSYS_NO_PATHCONV=1 gh issue comment <N> --body "lint-reject: <reason>"` → `MSYS_NO_PATHCONV=1 gh issue close <N>`.
+- Rejected state는 closed + `lint-reject:` 코멘트 존재로 판정.
 - Move to next cluster.
 
 **S — Skip:**
@@ -634,9 +659,9 @@ cd <marketplace-repo-main>
 git merge --no-ff "cm-lint/cluster-${cluster_id}" -m "merge cm-lint cluster ${cluster_id}"
 git worktree remove "$WT"
 git branch -d "cm-lint/cluster-${cluster_id}"
-# close all member issues
+# close all member issues. Landed state는 closed + "Fixed in <sha>" 코멘트로 판정.
 for n in $member_issues; do
-  gh issue close $n --comment "Fixed in ${commit_sha} via /cm-lint"
+  MSYS_NO_PATHCONV=1 gh issue close $n --comment "Fixed in ${commit_sha} via /cm-lint"
 done
 ```
 
@@ -646,10 +671,9 @@ done
 # Discard per using-git-worktrees skill guidance
 git worktree remove --force "$WT"
 git branch -D "cm-lint/cluster-${cluster_id}"
-# comment on all member issues with gate failure summary
+# Issue는 open 유지 (재시도 가능). Attempted state는 `lint-attempted:` 코멘트로 판정.
 for n in $member_issues; do
-  gh issue comment $n --body "lint-attempted: <gate-failure-summary>"
-  gh issue edit $n --add-label lint-attempted
+  MSYS_NO_PATHCONV=1 gh issue comment $n --body "lint-attempted: <gate-failure-summary>"
 done
 ```
 ```
@@ -685,7 +709,7 @@ Clusters processed: N
   Held (bump added, deferred):         H
   Rejected (closed):                   R
   Skipped (deferred to next lint):     S
-  Attempted but gate-failed:           F (lint-attempted label added)
+  Attempted but gate-failed:           F (lint-attempted: comment added, issue open 유지)
 
 Verification gates (on fixed clusters):
   Total subagent dispatches:   X*4 = <n>
@@ -710,7 +734,7 @@ Landed commits:
 
 - **"NOT_A_MARKETPLACE_REPO"** — run from `accelix-ai-plugins` repo root.
 - **`gh` auth error** — run `gh auth status`; re-login if needed.
-- **Clustering produces single mega-cluster** — symptom tokenization too lenient. Manual split via `/cm-lint --state gotcha-open` on specific labels.
+- **Clustering produces single mega-cluster** — symptom tokenization too lenient. Manual split via `/cm-lint --state new` to narrow to fresh captures only.
 - **Regression baseline fails on main** — indicates pre-existing issue unrelated to this fix. Log to user, skip regression gate for this cluster (with explicit user approval), continue.
 ```
 
@@ -833,8 +857,8 @@ Edit:
     ## [1.11.0-alpha] - 2026-04-20
 
     ### 추가
-    - **`/cm-lint` 슬래시 커맨드** — plastic-scm 스킬 전용 gotcha 진단+수리. 4-phase 워크플로우: GitHub Issues(`skill:plastic-scm` 필터)에서 gotcha-open/hold 수집 → 타이틀 유사도 클러스터링 → 유저 triage(accept/hold/reject) → worktree에서 4-gate 검증(baseline 재현 / primary fix 검증 / regression 2종) → 통과 시 commit+close, 실패 시 worktree 폐기+lint-attempted 라벨.
-    - `skills/plastic-scm/templates/gotcha-template.md` — 이슈 body 필수 필드(증상, 재현 단계, 시도, 해결/가설, 1줄 개선안, 영향 범위) + 라벨 스키마(`skill:plastic-scm` + `gotcha-open/hold/accepted/rejected`) + hold 카운터 규약(`lint-hold: bump (now N)` 코멘트).
+    - **`/cm-lint` 슬래시 커맨드** — plastic-scm 스킬 전용 gotcha 진단+수리. 4-phase 워크플로우: GitHub Issues(`skill:plastic-scm` 필터)에서 open 이슈 수집(bump 0 = new, bump ≥ 1 = held) → 타이틀 유사도 클러스터링 → 유저 triage(accept/hold/reject) → worktree에서 4-gate 검증(baseline 재현 / primary fix 검증 / regression 2종) → 통과 시 commit+close, 실패 시 worktree 폐기 + `lint-attempted:` 코멘트.
+    - `skills/plastic-scm/templates/gotcha-template.md` — 이슈 body 필수 필드(증상, 재현 단계, 시도, 해결/가설, 1줄 개선안, 영향 범위) + 라벨 스키마(`skill:plastic-scm` 단일; state는 issue open/closed + 코멘트 패턴으로 추적) + hold 카운터 규약(`lint-hold: bump (now N)` 코멘트).
     - `skills/plastic-scm/templates/regression-smoke.md` — lint Phase C 회귀 검증용 smoke test 4개(SM-01 단순 checkin, SM-02 폴더+CH/PR 혼재, SM-03 label with -c=, SM-04 merge_investigate.sh). 프로젝트 비특화, 일반 cm 플로우만.
     - `docs/plans/2026-04-20-gotcha-lint-system.md` — 이번 릴리스의 설계+구현 플랜(Phase 1+2). Phase 3(hook 기반 auto-capture)는 별도 플랜.
 
@@ -951,10 +975,10 @@ EOF
 - [ ] **Step 2: Create issue via `gh`**
 
 ```bash
-gh issue create \
+MSYS_NO_PATHCONV=1 gh issue create \
   --repo AccelixGames/accelix-ai-plugins \
   --title "[cm checkin] atomic fail when touched-but-hash-equal file in batch" \
-  --label "skill:plastic-scm,gotcha-open" \
+  --label "skill:plastic-scm" \
   --body-file /tmp/pilot-issue-body.md
 ```
 
@@ -966,7 +990,7 @@ Record the returned issue URL + number as `$PILOT_ISSUE`.
 gh issue view $PILOT_ISSUE --repo AccelixGames/accelix-ai-plugins
 ```
 
-Expected: labels include `skill:plastic-scm`, `gotcha-open`; body matches above.
+Expected: labels include `skill:plastic-scm` (single label); body matches above.
 
 ---
 
@@ -979,7 +1003,7 @@ Expected: labels include `skill:plastic-scm`, `gotcha-open`; body matches above.
 
 Invoke the command (either via Claude Code slash or simulate by following the command spec). Expected observations:
 
-- Phase A: fetches 1 issue under `skill:plastic-scm / gotcha-open`. Reports severity 1 (1 issue, 0 hold bumps).
+- Phase A: fetches 1 issue under `skill:plastic-scm` (open). Reports severity 1 (1 issue, 0 hold bumps → "new" state).
 - Phase B: presents the cluster. Decision options shown. User chooses Accept.
 - Phase C: worktree created; baseline subagent reproduces the trap; fix proposed (add checkin section gotcha doc); primary subagent re-runs (if the fix is documentation, the primary subagent verifies the doc now explains the recovery pattern); regression SM-01 + SM-02 (checkin-adjacent) pass.
 - Phase D: report shows 1 fixed, 0 held, 0 rejected.
