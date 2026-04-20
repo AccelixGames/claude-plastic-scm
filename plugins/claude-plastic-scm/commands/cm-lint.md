@@ -160,6 +160,20 @@ Print `fix_plan[]` summary → ask user: "Proceed to Phase C execution? (y/n)"
 
 Each cluster in `fix_plan[]` goes through a 4-gate verification. **All four gates must pass for the fix to land.** Philosophy: a wrong update is worse than no update.
 
+### Step C.0: Classify issue type — adapt gate strategy
+
+Not every gotcha is a runtime bug. Before Phase C begins, classify the cluster's dominant issue type (decide during Phase B accept; record in `fix_plan[cluster_id].issue_type`). Each type uses an adapted baseline/primary/regression strategy:
+
+| Type | Baseline gate (C.2) | Primary gate (C.4) | Regression gate (C.5-C.7) |
+|------|---------------------|---------------------|----------------------------|
+| **runtime** (cm CLI behavior, live workspace) | Subagent executes `재현 단계` in a live plastic workspace; confirms **Actual** behavior from issue body reproduces | Same subagent prompt post-fix; confirms **Expected** behavior now holds | Run 2 smoke scenarios from `regression-smoke.md` against live workspace (main vs $WT) — compare outputs |
+| **doc** (missing/wrong documentation, no runtime behavior change) | Grep the target doc file(s) for the missing mention or wrong claim; confirm gap exists on main | Grep same file(s) in $WT; confirm gap filled and no unrelated text churn | **Diff scope check**: `git diff main -- <targeted-path>` in $WT — verify only the intended file(s) changed and diff size is proportionate to the fix |
+| **process** (workflow/procedure, user-executed sequence) | Walk through current documented procedure; list step(s) that cause the symptom | Walk through revised procedure in $WT; confirm failing step now succeeds or is removed | Read adjacent procedures in the same file for unintended side effects; diff-scope check on touched files |
+
+**Type hints:** if 재현 단계 requires a live plastic workspace or runtime state, it's `runtime`. If 영향 범위 points at `references/**` or `SKILL.md` sections without runtime impact, it's `doc`. If it's about `/cm-*` command steps or checklists, it's `process`.
+
+The rest of Phase C (C.1-C.10) is the same workflow for all types — only the **content** of each gate adapts per the table above.
+
 ### Step C.1: Create worktree (using-git-worktrees skill)
 
 Invoke the superpowers:using-git-worktrees skill to create an isolated worktree for this cluster. The skill guides worktree creation; there is no bundled script. Typical result:
