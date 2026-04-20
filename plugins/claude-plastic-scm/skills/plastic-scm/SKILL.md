@@ -19,6 +19,117 @@ description: >
 This skill provides cm CLI reference and PlasticSCM workflow knowledge.
 For detailed command documentation, see `references/cm-commands.md`.
 
+## Core Principles — Read These First
+
+1. **Slash commands before raw `cm`** — For investigation tasks, prefer the bundled slash
+   commands (`/cm-status`, `/cm-branch-info`, `/cm-history`, `/cm-diff`) over directly firing
+   `cm find` / `cm status` / `cm diff`. They pack several queries into one call, cutting
+   round-trip overhead. Use raw `cm` only for queries not covered by slash commands.
+
+2. **Purpose-first exploration** — When the user asks for a "brief" / "strategy" /
+   "recommendation", ask yourself whether the info already gathered is enough to brief with,
+   **before** expanding exploration further. Gathering completeness ≠ briefing completeness.
+   Most status / merge investigations can be briefed within 3–5 queries; past that you're
+   probably drifting from intent.
+
+3. **`cm status` defaults to full; `--short` is a follow-up** — Calling `cm status --short`
+   first shows only paths and loses the Added/Changed/Private split. That's how a workspace
+   full of **empty private folders** gets mistaken for "a ton of pending changes". Open with
+   `cm status` (full) or `/cm-status`; use `--short` later when the category structure is
+   already known and you just need a path-only re-listing.
+
+## Merge Investigation Playbook
+
+When merging a source branch into the current branch, the entire investigation is bundled
+into a **single script**: `scripts/merge_investigate.sh`. It runs the six `cm` queries needed
+to brief the user, in the right order, in one Bash call — no fragmented round-trips, no
+accumulated cwd-reset noise.
+
+### Usage
+
+```bash
+bash <skill-dir>/scripts/merge_investigate.sh <src-branch> [--workspace <path>]
+```
+
+- `<src-branch>` — source branch spec, with or without `br:` prefix (e.g. `/main/feature/x`).
+- `--workspace <path>` — workspace root. Required on systems where the Bash tool resets cwd
+  between calls (e.g., Windows + Bash tool); omit if the shell already sits in the workspace.
+
+### What it outputs (raw data, labeled sections)
+
+1. `=== Workspace ===` — `cm wi` + parsed current branch.
+2. `=== Prior Merges (src -> dst) ===` — any existing merges of src into current.
+3. `=== Source Branch Info ===` — name, parent, created-date, owner.
+4. `=== Source Branch Changesets ===` — full list of changesets on the source branch, plus
+   count / tip / approx-base.
+5. `=== Source Tip Comment ===` — comment of the tip changeset.
+6. `=== Source Changes ===` — file list that differs. **Mode auto-selected**:
+   - If the source has a **single** changeset → `cm log cs:{tip}` shows exactly what that
+     commit touched (captures Move/rename operations, which range-diff reports as
+     Added+Deleted and loses).
+   - If the source has **multiple** changesets → `cm diff cs:{base} cs:{tip}` over the
+     branch range, plus a `Source Tip-Only Changes` follow-up from `cm log cs:{tip}` so you
+     can still see Move/rename intent of the latest commit.
+   - Outputs > 300 entries are auto-summarized (status counts + top-level-path buckets +
+     head 100 + tail 30). Full list re-run command is printed.
+7. `=== Effective Merge Delta (dst_tip -> src_tip) ===` — `cm diff` of the current branch's
+   tip against the source's tip. This is **what would actually change in the workspace if
+   you executed the merge**. It already accounts for parent-branch evolution since source
+   branched off, so it's usually narrower than the src-internal range in section 6 and is
+   the right view for briefing the user about impact. Same auto-summary rules apply.
+8. `=== Destination Status ===` — `cm status` (full) of the current workspace.
+
+### After the script completes — STOP INVESTIGATING
+
+The script is the **single source of truth** for merge investigation. Its output is what
+you brief with — do **not** run additional `cm diff` / `cm find` / `cm cat` calls to
+"cross-verify" or "go one step deeper". Each extra call compounds time cost fast and
+almost never changes the briefing outcome. The empirical baseline: a well-run merge brief
+takes **≤ 6 cm calls total**; anything past that is drift, not thoroughness.
+
+There are exactly three legitimate reasons to query further:
+
+1. The script printed `mode=unknown`, an empty required section, or a visible query error.
+2. An auto-summarized section cut off a detail you genuinely need. Re-run **only** the
+   single command the script printed for that section. Do not expand scope.
+3. The user's request hinges on information the script did not collect (rare — name the
+   missing piece out loud before querying, so the skill can grow later).
+
+Byte-level file comparisons (`cm cat ... | diff`) are **not investigation, they are
+verification**. They belong in the execution phase after the user approves a strategy,
+not in the briefing phase. The Effective Merge Delta's per-path status already tells you
+whether destination differs from source — that is the information you brief with.
+
+When you find yourself thinking "let me just check one more thing before briefing," stop.
+That's the drift instinct. Write the briefing from what you have; the user can ask for a
+specific deeper check if they want one.
+
+Move directly to Step 5.
+
+### Step 5+ — Briefing the user
+
+With the raw data in hand, judge:
+
+- **Already merged?** A non-empty `Prior Merges` section means skip — no re-merge needed.
+- **Has parent drifted?** Compare source's create-date against current's tip. A wide gap
+  plus heavy `Moved` / `Changed` entries in `Source Changes` signals the parent branch
+  restructured since the source branched off — a straight merge will fight that.
+- **Which strategy?** Typical shapes:
+  - **A. Full merge** — `cm merge br:{src} --merge [--keepdestination]`. Use when most of
+    the source's changes are wanted.
+  - **B. Path-scoped cherry-pick** — `cm merge cs:{tip} <path> --cherrypicking --merge`
+    per path. Use when only a subset is wanted; agree the whitelist with the user first.
+  - **C. File-level copy** — `cm cat "serverpath:{path}#cs:{tip}" > <local>`. Use sparingly
+    when the parent has restructured the tree in a way that would break a real merge (this
+    loses the Plastic merge-edge in history — document the source cs in the checkin comment).
+- **About `--keepdestination`**: it resolves only Changed-vs-Changed conflicts. Added /
+  Deleted from source still apply, so "everything else stays on destination" is **not**
+  literally guaranteed by `--keepdestination` alone. For strict scoping, use B or C.
+
+### Conflict resolution (after executing a merge)
+
+Use `/cm-status` to see conflicts, then `cm resolve <path> --src|--dst` per file.
+
 ## Quick Reference — Most Used Commands
 
 | Purpose | Command |
@@ -132,3 +243,11 @@ If this skill lacks information about a specific cm command or feature:
 1. Run `cm help {command}` to get the built-in documentation
 2. Check `references/cm-commands.md` for detailed option lists
 3. If the information is useful, consider adding it to the reference file
+
+## Environment Notes
+
+- **Windows + Bash tool** — The Bash tool resets cwd between invocations, so repeated
+  `cd "<workspace>" && cm ...` accomplishes nothing and floods the output with "Shell cwd
+  was reset" lines. Either pass `--workspace` to bundled scripts like `merge_investigate.sh`,
+  use absolute paths in raw `cm` args, or switch to the `PowerShell` tool (which keeps cwd
+  across calls).

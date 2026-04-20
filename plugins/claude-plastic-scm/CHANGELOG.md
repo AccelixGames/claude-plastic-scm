@@ -3,6 +3,30 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)를 기반으로 하며,
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따른다.
 
+## [1.10.0] - 2026-04-20
+
+### 추가
+- **Merge Investigation Playbook + `scripts/merge_investigate.sh`** — 병합 조사를 단일 Bash 호출로 번들링한 스크립트. 6개 `cm` 쿼리(`wi`, `find merge`, `find branch`, `find changeset`, `log`/`diff`, `status`)를 정해진 순서로 실행하고 라벨링된 섹션으로 raw data 출력.
+  - 소스 브랜치 changeset 개수에 따라 single-cs 모드(`cm log`, Move/rename 보존) vs range-diff 모드 자동 선택
+  - `Effective Merge Delta (dst_tip → src_tip)` 섹션 — 실제 병합 시 워크스페이스에 반영될 변경 범위
+  - 300+ 엔트리 출력은 요약 모드 자동 전환 (status counts + top-level-path buckets + head 100 + tail 30)
+- **Core Principles 섹션** — 조사 시작 전 3대 원칙: (1) slash commands first, (2) purpose-first exploration, (3) `cm status` 기본 full.
+- **"STOP INVESTIGATING" 규칙** — 스크립트 완료 후 추가 `cm diff`/`find`/`cat` 호출을 명시적으로 제한. 3가지 예외 조건만 추가 탐색 허용(mode=unknown, auto-summary 세부, 스크립트 미수집 항목).
+- **Environment Notes** — Windows Bash 툴 cwd 리셋 동작 및 우회법(`--workspace` 인자, 절대경로, PowerShell 툴).
+
+### 수정
+- `references/cm-commands.md` `diff` 섹션: 잘못 나열된 `--nototal` 옵션 제거 + "`cm diff`는 `--nototal` 미지원(`cm find`에서만 동작)" 주의 추가.
+
+### 변경
+- SKILL.md 본문 전면 영어화(일관성 + 토큰 효율). Playbook / Core Principles / Environment Notes는 영어로 신규 작성.
+
+### 측정된 효과 (ProjectMaid 병합 조사 벤치마크)
+| 지표 | 이전 | 1.10.0 |
+|---|---|---|
+| Tool execution 시간 | ~496s | ~20s |
+| Tool uses | 67 | 8 |
+| 병합 전략 식별 품질 | Move/rename 미감지, base 혼동, `cm merge --ancestor` 오작동 | Move 감지, Effective Delta, pending 매칭, 제약 위반 0 |
+
 ## [1.9.0] - 2026-04-18
 
 ### 추가

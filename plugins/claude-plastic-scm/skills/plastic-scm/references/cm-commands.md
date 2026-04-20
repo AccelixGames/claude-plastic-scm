@@ -244,7 +244,12 @@ cm diff {spec1} {spec2} [options]
 | `--clean` | Exclude merge-generated differences |
 | `--ignore=(eol\|whitespaces\|none)` | Ignore whitespace changes |
 | `--download={path}` | Save diff content |
-| `--nototal` | Suppress record count |
+
+### ⚠️ Unsupported — `--nototal` on `cm diff`
+
+`--nototal`은 `cm find` 계열에서만 동작한다. `cm diff`에 붙이면
+`diff: 예상치 못한 옵션 --nototal` 에러로 실패한다. 총계 줄이 방해되면
+파이프로 제거하거나 `--format`만 지정하면 된다.
 
 ### ⚠️ GUI Trap — Path Argument Opens Compare Window
 
